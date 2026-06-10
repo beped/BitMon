@@ -1,0 +1,53 @@
+# ==========================================
+#  BitMon backend  (this folder is the repo root)
+# ==========================================
+
+# Python caches / bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local user config with personal data, tokens, private URLs or device names
+bitmon_config.json
+# persona_config.json is tracked on purpose: it is the default persona base.
+persona/personas/
+persona/.sprite_backup/
+persona/*.local.json
+*local*.json
+*secret*.json
+*secrets*.json
+
+# Local integration caches (keep the *.example.json templates)
+tools/*cache*.json
+tools/*_cache.json
+!tools/*cache*.example.json
+!tools/*_cache.example.json
+
+# Logs, backups, caches and local markers
+logs/
+config_backups/
+cache/
+.local_token
+.bitmon_first_run_done
+*.log
+
+# Generated launcher shortcut
+*.lnk
+
+# Build / packaging / installer artifacts
+*.spec
+installer/output/
+installer/build/
+release/
+releases/
+
+# OS & editor noise
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store

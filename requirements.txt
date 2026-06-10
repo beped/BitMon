@@ -1,0 +1,2 @@
+# Default install path. Install requirements-gpu.txt first when CUDA wheels are desired.
+-r requirements-core.txt

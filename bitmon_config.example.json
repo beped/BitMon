@@ -1,0 +1,99 @@
+{
+  "config_version": 2,
+  "provider": "inworld",
+  "llm": {
+    "provider": "inworld"
+  },
+  "tts": {
+    "enabled": true,
+    "provider": "inworld"
+  },
+  "speech": {
+    "stt_language": "en",
+    "tts_language": "en"
+  },
+  "whisper": {
+    "model": "base"
+  },
+  "character": {
+    "name": "Noah",
+    "personality_prompt": "Personality: helpful, concise, friendly virtual companion with a playful BitMon energy."
+  },
+  "inworld": {
+    "model": "deepseek-v4-flash",
+    "voice": "Sarah",
+    "voice_response": true,
+    "stt_provider": "whisper",
+    "whisper_model": "base",
+    "stt_language": "en",
+    "tts_language": "en",
+    "vision": "auto"
+  },
+  "local": {
+    "base_url": "http://127.0.0.1:1234/v1",
+    "model": "local-model",
+    "temperature": 0.7,
+    "max_tokens": 220,
+    "voice_response": true,
+    "stt_provider": "whisper",
+    "whisper_model": "base",
+    "stt_language": "en",
+    "tts_language": "en",
+    "kokoro_model": "hexgrad/Kokoro-82M",
+    "kokoro_lang": "a",
+    "kokoro_voice": "af_heart",
+    "kokoro_speed": 1.0,
+    "vision": "auto",
+    "vision_model": ""
+  },
+  "microphone": {
+    "gain": 10.0,
+    "vad_threshold": 0.004,
+    "whisper_hotkey": "f8",
+    "whisper_hotkeys": [
+      "f8"
+    ]
+  },
+  "wake_word": {
+    "enabled": false,
+    "engine": "openwakeword",
+    "selected_model": "file:hey_Noah.onnx",
+    "model_names": [],
+    "model_paths": [
+      "wakeword/hey_Noah.onnx"
+    ],
+    "threshold": 0.5,
+    "vad_threshold": 0.0,
+    "cooldown_seconds": 2.0,
+    "activation_timeout_seconds": 1.0,
+    "command_timeout_seconds": 8.0,
+    "command_silence_seconds": 0.3,
+    "preroll_seconds": 1.5,
+    "auto_download_models": true
+  },
+  "overlay": {
+    "enabled": true,
+    "always_on_top": true
+  },
+  "debug": {
+    "user_subtitle": false,
+    "replay_audio": false
+  },
+  "tools": {
+    "screen_analysis": true,
+    "open_configuration": true
+  },
+  "ui": {
+    "locale": "en-US"
+  },
+  "secrets": {
+    "inworld_api_key_configured": false
+  },
+  "mcps": {
+    "home_assistant": {
+      "enabled": false,
+      "url": ""
+    },
+    "servers": []
+  }
+}

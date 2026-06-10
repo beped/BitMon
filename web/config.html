@@ -1,0 +1,4526 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BitMon Config</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/app-icon.png" />
+  <link rel="apple-touch-icon" href="/app-icon.png" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080c10;
+      --panel: #11171d;
+      --panel-soft: #182129;
+      --field: #0c1117;
+      --ink: #eef4f8;
+      --muted: #91a2af;
+      --line: #26313a;
+      --green: #22c55e;
+      --blue: #3b82f6;
+      --violet: #8b5cf6;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: #344350 transparent;
+    }
+    *::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: #344350;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background-clip: content-box;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: #536575;
+      background-clip: content-box;
+    }
+    *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main {
+      width: 95vw;
+      height: calc(100vh - 32px);
+      margin: 16px auto;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .28));
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .header-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .locale-field {
+      min-width: 180px;
+    }
+    .locale-field select {
+      padding: 7px 10px;
+    }
+    .inline-action {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, .55);
+      backdrop-filter: blur(5px);
+    }
+    .modal-backdrop[hidden] {
+      display: none;
+    }
+    .modal {
+      width: min(420px, calc(100vw - 32px));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #101820;
+      box-shadow: 0 24px 70px rgba(0,0,0,.45);
+      padding: 22px;
+      text-align: center;
+    }
+    .modal h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .modal p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 5px;
+    }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      border-radius: 7px;
+      padding: 8px 11px;
+      color: var(--muted);
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: var(--ink);
+      background: var(--panel-soft);
+    }
+    .tab:hover {
+      color: var(--ink);
+      background: #151e26;
+    }
+    form {
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .panel {
+      display: none;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel.active {
+      display: block;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 10px;
+    }
+    .chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--field);
+    }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: #4f46e5;
+      color: #f8fafc;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.assistant {
+      align-self: flex-start;
+      background: #16202b;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-empty {
+      margin: auto;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .chat-input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+    .chat-input-row textarea {
+      resize: none;
+      max-height: 120px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: var(--field);
+      font: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+    .chat-input-row textarea:focus {
+      border-color: rgba(99,102,241,0.6);
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .grid.one {
+      grid-template-columns: 1fr;
+    }
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .model-stack {
+      display: grid;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+    .model-section {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .model-section[hidden] {
+      display: none;
+    }
+    .model-section-title {
+      color: #c8d3dc;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .switch-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .switch-label {
+      display: grid;
+      gap: 3px;
+      color: #c8d3dc;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .switch-hint {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .switch-control {
+      position: relative;
+      flex: 0 0 auto;
+      width: 48px;
+      height: 26px;
+    }
+    .switch-control input {
+      position: absolute;
+      opacity: 0;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      cursor: pointer;
+    }
+    .switch-slider {
+      position: absolute;
+      inset: 0;
+      border: 1px solid #33424d;
+      border-radius: 999px;
+      background: #071017;
+      transition: background .18s ease, border-color .18s ease;
+      pointer-events: none;
+    }
+    .switch-slider::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transition: transform .18s ease, background .18s ease;
+    }
+    .switch-control input:checked + .switch-slider {
+      border-color: rgba(34, 197, 94, .65);
+      background: rgba(34, 197, 94, .20);
+    }
+    .switch-control input:checked + .switch-slider::after {
+      transform: translateX(22px);
+      background: var(--green);
+    }
+    .microphone-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-items: start;
+      padding-bottom: 4px;
+    }
+    .microphone-grid .meter-card {
+      grid-column: 1 / -1;
+    }
+    .hotkey-field {
+      grid-column: 1 / -1;
+    }
+    .wake-runtime-grid {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: #c8d3dc;
+      font-size: 12px;
+      font-weight: 750;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: var(--field);
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #667684;
+    }
+    textarea {
+      min-height: 178px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #3d4d59;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .14);
+    }
+    .range-field {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .range-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .range-top span {
+      color: #c8d3dc;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .range-top input[type="number"] {
+      width: 110px;
+      padding: 7px 8px;
+      font-size: 13px;
+    }
+    input[type="range"] {
+      padding: 0;
+      border: 0;
+      accent-color: var(--green);
+    }
+    .meter-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .meter-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .meter-title {
+      display: grid;
+      gap: 3px;
+    }
+    .meter-title strong {
+      color: #c8d3dc;
+      font-size: 13px;
+    }
+    .meter-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .meter-bar {
+      position: relative;
+      height: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #080c10;
+    }
+    .meter-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: #3b82f6;
+      transition: width .08s linear, background .08s linear;
+    }
+    .meter-fill.active {
+      background: var(--green);
+    }
+    .meter-threshold {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      left: 0%;
+      width: 4px;
+      background: var(--amber);
+      transform: translateX(-50%);
+    }
+    .meter-readout {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .meter-readout b {
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      background: var(--field);
+      color: #c8d3dc;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .toggle input {
+      width: 19px;
+      height: 19px;
+      accent-color: var(--green);
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    #status {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    button.action {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--field);
+      color: var(--ink);
+    }
+    button.action:hover {
+      background: var(--panel-soft);
+    }
+    button.primary {
+      border-color: #16a34a;
+      background: #16a34a;
+      color: #ffffff;
+    }
+    button.primary:hover {
+      background: #15803d;
+    }
+    @media (max-width: 1180px) {
+      .grid.three,
+      .microphone-grid,
+      .wake-runtime-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+      main {
+        height: auto;
+        min-height: calc(100vh - 32px);
+      }
+      .grid,
+      .grid.three,
+      .toggle-grid,
+      .microphone-grid,
+      .wake-runtime-grid {
+        grid-template-columns: 1fr;
+      }
+      .inline-action {
+        grid-template-columns: 1fr;
+      }
+      .actions {
+        flex-wrap: wrap;
+      }
+    }
+    .tab[hidden] {
+      display: none;
+    }
+    [hidden] {
+      display: none !important;
+    }
+    .device-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .device-list {
+      height: calc(100% - 84px);
+      min-height: 280px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--field);
+    }
+    .device-row {
+      display: grid;
+      grid-template-columns: 34px 1.1fr .7fr 1.5fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .device-row:last-child {
+      border-bottom: 0;
+    }
+    .device-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--muted);
+      background: #0d141a;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+    .device-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+    .device-row input {
+      padding: 7px 8px;
+      font-size: 12px;
+    }
+    .mcp-row {
+      display: grid;
+      grid-template-columns: 34px minmax(120px, .7fr) minmax(220px, 1.2fr) minmax(120px, .55fr) minmax(180px, .8fr) minmax(220px, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .mcp-row:last-child {
+      border-bottom: 0;
+    }
+    .mcp-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+    .mcp-row input,
+    .mcp-row select {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 12px;
+    }
+    .mcp-auth-cell {
+      display: grid;
+      gap: 6px;
+    }
+    .persona-column-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .persona-column-head > span {
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+    }
+    .persona-library {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #101820, #0d1319);
+    }
+    .persona-library-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .persona-field {
+      display: grid;
+      gap: 6px;
+      flex: 1 1 320px;
+      min-width: 0;
+    }
+    .persona-field > span {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .persona-name-control {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+    .persona-picker {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .persona-meta {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--muted);
+      background: var(--field);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .persona-library-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .persona-files-modal {
+      width: min(760px, calc(100vw - 32px));
+      text-align: left;
+    }
+    .persona-files-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0 16px;
+    }
+    .persona-file-option {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .persona-file-option strong {
+      font-size: 14px;
+    }
+    .persona-file-option span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .persona-file-option input[type="file"] {
+      width: 100%;
+    }
+    .persona-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .persona-assets {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .persona-assets-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .persona-asset-upload { display: flex; gap: 8px; align-items: center; }
+    .persona-asset-upload input[type="file"] { max-width: 240px; }
+    .theme-stack {
+      display: grid;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+    .theme-presets {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .theme-presets[hidden] {
+      display: none;
+    }
+    .theme-preset-card {
+      position: relative;
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+    }
+    .theme-preset-del {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      z-index: 1;
+      width: 20px;
+      height: 20px;
+      border: 0;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, .16);
+      color: #fca5a5;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .theme-preset-del:hover {
+      background: rgba(239, 68, 68, .4);
+      color: #fff;
+    }
+    .theme-library-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .theme-library-row input {
+      max-width: 280px;
+    }
+    .theme-preset-card:hover {
+      color: var(--ink);
+      border-color: #3a4a58;
+    }
+    .theme-preset-card.active {
+      color: var(--ink);
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue);
+    }
+    .theme-preset-art {
+      position: relative;
+      display: block;
+      height: 56px;
+      border-radius: 8px;
+      background: linear-gradient(160deg, #1c2733, #0a0f15);
+      overflow: hidden;
+    }
+    .theme-preset-bubble {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 9px;
+      height: 22px;
+    }
+    .theme-preset-input {
+      position: absolute;
+      left: 8px;
+      right: 26px;
+      bottom: 8px;
+      height: 12px;
+    }
+    .theme-preset-mic {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      width: 14px;
+      height: 12px;
+    }
+    .theme-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .theme-controls {
+      display: grid;
+      gap: 8px;
+    }
+    .theme-range {
+      display: grid;
+      gap: 3px;
+    }
+    .theme-range .range-top {
+      margin-bottom: 0;
+      color: #c8d3dc;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    input[type="color"] {
+      width: 100%;
+      height: 28px;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--field);
+      cursor: pointer;
+    }
+    /* Compact the Themes controls so the colour cards don't take so much room. */
+    [data-panel="themes"] .model-section {
+      gap: 8px;
+      padding: 10px;
+    }
+    [data-panel="themes"] .grid {
+      gap: 8px 10px;
+    }
+    [data-panel="themes"] .theme-controls label {
+      gap: 3px;
+      font-size: 12px;
+    }
+    [data-panel="themes"] .toggle {
+      padding: 6px 10px;
+    }
+    .theme-preview-card {
+      position: sticky;
+      top: 0;
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--field);
+    }
+    .theme-preview {
+      display: grid;
+      gap: 14px;
+      align-content: end;
+      min-height: 250px;
+      border-radius: 10px;
+      padding: 16px;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(99, 102, 241, .25), transparent 55%),
+        linear-gradient(165deg, #233140, #0b1016 70%);
+    }
+    .theme-preview-bubble {
+      padding: 12px 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .theme-preview-name {
+      margin-bottom: 4px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .theme-preview-name[hidden] {
+      display: none;
+    }
+    .theme-preview-field {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 44px;
+      padding-left: 16px;
+      padding-right: 64px;
+      font-size: 14px;
+      font-weight: 600;
+      overflow: hidden;
+    }
+    .theme-preview-mic {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 48px;
+      display: grid;
+      place-items: center;
+    }
+    .theme-preview-mic img {
+      width: 18px;
+      height: 18px;
+    }
+    .persona-asset-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 2px;
+    }
+    .persona-asset-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      grid-template-areas: "thumb name" "actions actions";
+      gap: 6px 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--field);
+    }
+    .persona-asset-thumb {
+      grid-area: thumb;
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      background: #0b1218;
+      border-radius: 6px;
+    }
+    .persona-asset-name {
+      grid-area: name;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .persona-asset-name .label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .persona-asset-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #6ee7b7;
+      border: 1px solid rgba(110, 231, 183, 0.4);
+      border-radius: 999px;
+      padding: 1px 6px;
+      white-space: nowrap;
+    }
+    .persona-asset-actions {
+      grid-area: actions;
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .persona-asset-actions .action { padding: 4px 10px; font-size: 12px; }
+    .persona-asset-empty {
+      grid-column: 1 / -1;
+      padding: 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .persona-column {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0;
+    }
+    .persona-list {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--field);
+    }
+    .persona-row {
+      display: grid;
+      grid-template-columns: 1fr 58px 52px 72px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .persona-row:last-child {
+      border-bottom: 0;
+    }
+    .persona-row.active {
+      background: #141d25;
+    }
+    .persona-row:not(.persona-head):hover {
+      background: #101922;
+    }
+    .persona-row input,
+    .persona-row select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 8px;
+      color: var(--ink);
+      background: var(--field);
+      font: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+    .persona-editor {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--field);
+      padding: 12px;
+    }
+    .persona-previews {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      align-content: start;
+      min-width: 0;
+    }
+    .persona-config {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      min-width: 0;
+    }
+    .persona-config-title {
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+    }
+    .persona-preview {
+      display: grid;
+      place-items: center;
+      height: 184px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #05080c;
+      overflow: hidden;
+    }
+    .persona-preview canvas {
+      width: auto;
+      height: auto;
+      max-width: calc(100% - 24px);
+      max-height: calc(100% - 24px);
+      image-rendering: auto;
+    }
+    .persona-sheet-preview {
+      display: grid;
+      place-items: center;
+      height: 220px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #05080c;
+      overflow: auto;
+      scrollbar-gutter: stable;
+    }
+    .persona-sheet-preview canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: auto;
+    }
+    .persona-edit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+    .persona-edit-grid label {
+      gap: 4px;
+      min-width: 0;
+    }
+    #persona-edit-idle-after-field.is-hidden {
+      display: none;
+    }
+    .persona-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--muted);
+      background: #0d141a;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+    .device-domain {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .danger {
+      border-color: rgba(239, 68, 68, .45) !important;
+      color: #fecaca !important;
+    }
+    .app-toast-container {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .app-toast {
+      position: absolute;
+      left: 50%;
+      min-width: min(420px, calc(100vw - 32px));
+      max-width: calc(100vw - 32px);
+      transform: translateX(-50%) translateY(-10px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--ink);
+      background: #101820;
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+      font-size: 13px;
+      font-weight: 850;
+      text-align: center;
+      opacity: 0;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .app-toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .app-toast--top { top: 18px; }
+    .app-toast--mid { top: 50%; transform: translateX(-50%) translateY(-50%); }
+    .app-toast--mid.is-visible { transform: translateX(-50%) translateY(-50%); }
+    .app-toast--bot { bottom: 18px; }
+    .app-toast--success { border-color: rgba(34, 197, 94, .65); }
+    .app-toast--error { border-color: rgba(239, 68, 68, .65); }
+    .app-toast--warning { border-color: rgba(245, 158, 11, .65); }
+    .app-toast--info { border-color: rgba(59, 130, 246, .65); }
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      main { height: auto; }
+      header { display: block; }
+      .brand { align-items: flex-start; }
+      .brand-icon { width: 40px; height: 40px; flex-basis: 40px; }
+      .header-tools { justify-content: flex-start; margin-top: 8px; }
+      .badge { display: inline-block; margin-top: 8px; }
+      .tabs { overflow-x: auto; }
+      .grid, .toggle-grid { grid-template-columns: 1fr; }
+      .device-toolbar, .device-row, .mcp-row, .persona-picker, .persona-name-control, .persona-files-grid, .persona-row, .persona-workspace, .persona-editor, .persona-edit-grid, .persona-asset-list { grid-template-columns: 1fr; }
+      .theme-workspace { grid-template-columns: 1fr; }
+      .theme-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .persona-workspace { height: auto; }
+      .persona-library-actions, .persona-column-head { justify-content: flex-start; }
+      .device-head, .persona-head { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <img class="brand-icon" src="/app-icon.png" alt="" aria-hidden="true" />
+        <div>
+          <h1 data-i18n="app.title">BitMon Config</h1>
+          <p class="subtitle" data-i18n="app.subtitle">Central configuration for the character, model, microphone, and overlay.</p>
+        </div>
+      </div>
+      <div class="header-tools">
+        <label class="locale-field">
+          <span data-i18n="ui.locale">Interface language</span>
+          <select id="locale-select" name="ui.locale" form="form"></select>
+        </label>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Categories" data-i18n-aria-label="tabs.categories">
+      <button class="tab active" type="button" data-tab="chat"><span data-i18n="tabs.chat">Conversations</span></button>
+      <button class="tab" type="button" data-tab="character"><span data-i18n="tabs.character">Character</span></button>
+      <button class="tab" type="button" data-tab="model"><span data-i18n="tabs.model">Model</span></button>
+      <button class="tab" type="button" data-tab="microphone"><span data-i18n="tabs.microphone">Microphone</span></button>
+      <button class="tab" type="button" data-tab="overlay"><span data-i18n="tabs.overlay">Overlay</span></button>
+      <button class="tab" type="button" data-tab="capabilities"><span data-i18n="tabs.capabilities">Capabilities</span></button>
+      <button class="tab" type="button" data-tab="persona"><span data-i18n="tabs.persona">Persona</span></button>
+      <button class="tab" type="button" data-tab="themes"><span data-i18n="tabs.themes">Themes</span></button>
+      <button class="tab" type="button" data-tab="mcps"><span data-i18n="tabs.mcps">MCPs</span></button>
+      <button class="tab" type="button" data-tab="devices" id="devices-tab" hidden><span data-i18n="tabs.devices">Devices</span></button>
+      <button class="tab" type="button" data-tab="debug"><span data-i18n="tabs.debug">Debug</span></button>
+    </nav>
+
+    <form id="form">
+      <section class="panel active" data-panel="chat">
+        <div class="chat-wrap">
+          <div class="chat-head">
+            <button class="action danger" type="button" id="chat-clear" data-i18n="actions.clearChat">Clear history</button>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-empty" id="chat-empty" data-i18n="chat.empty">No messages yet. Send one to talk to your pet.</div>
+          </div>
+          <div class="chat-input-row">
+            <textarea id="chat-input" rows="1" data-i18n-placeholder="placeholders.chatInput" placeholder="Type a message and press Enter…"></textarea>
+            <button class="action primary" type="button" id="chat-send" data-i18n="actions.sendChat">Send</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="character">
+        <div class="grid one">
+          <label><span data-i18n="fields.name">Name</span>
+            <input name="character.name" autocomplete="off" />
+          </label>
+          <label><span data-i18n="fields.personality">Personality</span>
+            <textarea name="character.personality_prompt"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="model">
+        <div class="model-stack">
+          <label class="switch-field">
+            <span class="switch-label">
+              <span data-i18n="fields.voiceResponse">Voice response</span>
+              <span class="switch-hint" data-i18n="fields.voiceResponseHint">When off, BitMon only prints the text response.</span>
+            </span>
+            <span class="switch-control">
+              <input name="tts.enabled" id="voice-response-toggle" type="checkbox" />
+              <span class="switch-slider"></span>
+            </span>
+          </label>
+
+          <div class="model-section">
+            <div class="model-section-title" data-i18n="modelSections.llm">LLM</div>
+            <div class="grid">
+              <label><span data-i18n="fields.llmProvider">LLM provider</span>
+                <select name="llm.provider" id="llm-provider-select">
+                  <option value="inworld">Inworld</option>
+                  <option value="local">LM Studio</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.inworldApiKey">Inworld API key</span>
+                <input name="secrets.inworld_api_key" id="inworld-api-key" type="password" autocomplete="new-password" data-i18n-placeholder="placeholders.keepCurrentKey" placeholder="Leave blank to keep the current key" />
+              </label>
+            </div>
+            <div class="grid" id="llm-inworld-fields">
+              <label><span data-i18n="fields.llmModel">LLM model</span>
+                <input name="inworld.model" autocomplete="off" />
+              </label>
+              <label><span data-i18n="fields.visionSupport">Screen vision</span>
+                <select name="inworld.vision">
+                  <option value="auto" data-i18n="vision.auto">Auto (detect from model)</option>
+                  <option value="on" data-i18n="vision.on">On (model accepts images)</option>
+                  <option value="off" data-i18n="vision.off">Off (use gpt-4o-mini)</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid" id="llm-local-fields" hidden>
+              <label><span data-i18n="fields.lmStudioUrl">LM Studio URL</span>
+                <input name="local.base_url" id="lmstudio-base-url" autocomplete="off" data-i18n-placeholder="placeholders.lmStudioUrl" placeholder="http://127.0.0.1:1234/v1" />
+              </label>
+              <label><span data-i18n="fields.lmStudioModel">LM Studio model</span>
+                <span class="inline-action">
+                  <select name="local.model" id="lmstudio-model-select">
+                    <option value="local-model">local-model</option>
+                  </select>
+                  <button class="action" type="button" id="lmstudio-models-refresh" data-i18n="actions.refresh">Refresh</button>
+                </span>
+              </label>
+              <label><span data-i18n="fields.temperature">Temperature</span>
+                <input name="local.temperature" type="number" min="0" max="2" step="0.1" />
+              </label>
+              <label><span data-i18n="fields.maxTokens">Max tokens</span>
+                <input name="local.max_tokens" type="number" min="32" max="4096" step="1" />
+              </label>
+              <label><span data-i18n="fields.visionSupport">Screen vision</span>
+                <select name="local.vision">
+                  <option value="auto" data-i18n="vision.auto">Auto (detect from model)</option>
+                  <option value="on" data-i18n="vision.on">On (model accepts images)</option>
+                  <option value="off" data-i18n="vision.off">Off (use gpt-4o-mini)</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.visionModel">Local vision model (optional)</span>
+                <input name="local.vision_model" autocomplete="off" data-i18n-placeholder="placeholders.visionModel" placeholder="Leave blank to use the chat model" />
+              </label>
+            </div>
+          </div>
+
+          <div class="model-section" id="tts-section">
+            <div class="model-section-title" data-i18n="modelSections.tts">TTS</div>
+            <div class="grid">
+              <label><span data-i18n="fields.ttsProvider">TTS provider</span>
+                <select name="tts.provider" id="tts-provider-select">
+                  <option value="inworld">Inworld</option>
+                  <option value="kokoro">Kokoro</option>
+                </select>
+              </label>
+              <div></div>
+            </div>
+            <div class="grid" id="tts-inworld-fields">
+              <label><span data-i18n="fields.inworldVoice">Inworld voice</span>
+                <input name="inworld.voice" autocomplete="off" />
+              </label>
+              <div></div>
+            </div>
+            <div class="grid" id="tts-kokoro-fields" hidden>
+              <label><span data-i18n="fields.kokoroModel">Kokoro model</span>
+                <select name="local.kokoro_model" id="kokoro-model-select">
+                  <option value="hexgrad/Kokoro-82M">Kokoro 82M</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.kokoroLanguage">Kokoro language</span>
+                <select name="local.kokoro_lang" id="kokoro-lang-select">
+                  <option value="p">Portuguese BR (p)</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.kokoroVoice">Kokoro voice</span>
+                <select name="local.kokoro_voice" id="kokoro-voice-select">
+                  <option value="pf_dora">Dora (pf_dora)</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.kokoroSpeed">Kokoro speed</span>
+                <input name="local.kokoro_speed" type="number" min="0.5" max="2" step="0.05" />
+              </label>
+            </div>
+          </div>
+
+          <div class="model-section">
+            <div class="model-section-title" data-i18n="modelSections.languages">Languages</div>
+            <div class="grid">
+              <label><span data-i18n="fields.sttLanguage">STT language</span>
+                <select name="speech.stt_language">
+                  <option value="pt">Portuguese (pt)</option>
+                  <option value="pt-BR">Portuguese BR (pt-BR)</option>
+                  <option value="en">English (en)</option>
+                  <option value="en-US">English US (en-US)</option>
+                  <option value="es">Spanish (es)</option>
+                  <option value="fr">French (fr)</option>
+                  <option value="de">German (de)</option>
+                  <option value="it">Italian (it)</option>
+                  <option value="ja">Japanese (ja)</option>
+                  <option value="ko">Korean (ko)</option>
+                  <option value="zh">Chinese (zh)</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.ttsLanguage">TTS language</span>
+                <select name="speech.tts_language">
+                  <option value="pt">Portuguese (pt)</option>
+                  <option value="pt-BR">Portuguese BR (pt-BR)</option>
+                  <option value="en">English (en)</option>
+                  <option value="en-US">English US (en-US)</option>
+                  <option value="es">Spanish (es)</option>
+                  <option value="fr">French (fr)</option>
+                  <option value="de">German (de)</option>
+                  <option value="it">Italian (it)</option>
+                  <option value="ja">Japanese (ja)</option>
+                  <option value="ko">Korean (ko)</option>
+                  <option value="zh">Chinese (zh)</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="model-section">
+            <div class="model-section-title" data-i18n="modelSections.whisper">Whisper</div>
+            <div class="grid">
+              <label><span data-i18n="fields.whisperModel">Whisper model</span>
+                <select name="whisper.model">
+                  <option value="tiny">tiny</option>
+                  <option value="base">base</option>
+                  <option value="small">small</option>
+                  <option value="medium">medium</option>
+                </select>
+              </label>
+              <div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="microphone">
+        <div class="microphone-grid">
+          <div class="range-field">
+            <div class="range-top">
+              <span data-i18n="fields.gain">Gain</span>
+              <input name="microphone.gain" data-range-value="microphone.gain" type="number" min="1" max="20" step="0.5" />
+            </div>
+            <input data-range="microphone.gain" type="range" min="1" max="20" step="0.5" />
+          </div>
+          <div class="range-field">
+            <div class="range-top">
+              <span data-i18n="fields.vadSensitivity">VAD sensitivity</span>
+              <input name="microphone.vad_threshold" data-range-value="microphone.vad_threshold" type="number" min="0.001" max="0.1" step="0.001" />
+            </div>
+            <input data-range="microphone.vad_threshold" type="range" min="0.001" max="0.1" step="0.001" />
+          </div>
+          <div class="meter-card">
+            <div class="meter-head">
+              <div class="meter-title">
+                <strong data-i18n="meter.title">Real-time monitor</strong>
+                <span data-i18n="meter.subtitle">RMS with gain applied to test the threshold</span>
+              </div>
+              <button class="action" type="button" id="meter-toggle" data-i18n="actions.startTest">Start test</button>
+            </div>
+            <div class="meter-bar" aria-label="Microphone level" data-i18n-aria-label="meter.microphoneLevel">
+              <div class="meter-fill" id="meter-fill"></div>
+              <div class="meter-threshold" id="meter-threshold"></div>
+            </div>
+            <div class="meter-readout">
+              <span><span data-i18n="meter.rms">RMS</span>: <b id="meter-rms">0.0000</b></span>
+              <span><span data-i18n="meter.threshold">Threshold</span>: <b id="meter-threshold-value">0.0000</b></span>
+              <span><span data-i18n="meter.status">Status</span>: <b id="meter-state">stopped</b></span>
+            </div>
+          </div>
+          <label id="whisper-hotkey-field" class="hotkey-field"><span data-i18n="fields.pushToTalkHotkey">Push-to-talk hotkey</span>
+            <span class="inline-action">
+              <input name="microphone.whisper_hotkey" id="whisper-hotkey-input" autocomplete="off" data-i18n-placeholder="placeholders.hotkeys" placeholder="f8, mouse4" readonly />
+              <button class="action" type="button" id="capture-hotkey" data-i18n="actions.addButton">Add button</button>
+              <button class="action danger" type="button" id="clear-hotkeys" data-i18n="actions.clear">Clear</button>
+            </span>
+          </label>
+          <div class="wake-runtime-grid">
+            <label class="toggle"><span data-i18n="fields.wakeWordEnabled">Wake word</span>
+              <input name="wake_word.enabled" type="checkbox" />
+            </label>
+            <label><span data-i18n="fields.wakeWordModel">Activation phrase</span>
+              <select name="wake_word.selected_model" id="wake-word-model-select"></select>
+            </label>
+            <label><span data-i18n="fields.wakeWordActivationTimeout">Activation wait seconds</span>
+              <input name="wake_word.activation_timeout_seconds" type="number" min="0.1" max="10" step="0.1" />
+            </label>
+            <label><span data-i18n="fields.wakeWordFinalSilence">Finish silence seconds</span>
+              <input name="wake_word.command_silence_seconds" type="number" min="0.1" max="5" step="0.1" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="overlay">
+        <div class="toggle-grid">
+          <label class="toggle"><span data-i18n="fields.alwaysOnTop">Always on top</span>
+            <input name="overlay.always_on_top" type="checkbox" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="debug">
+        <div class="toggle-grid">
+          <label class="toggle"><span data-i18n="fields.userSubtitle">User subtitle</span>
+            <input name="debug.user_subtitle" type="checkbox" />
+          </label>
+          <label class="toggle"><span data-i18n="fields.replaySentAudio">Replay sent audio</span>
+            <input name="debug.replay_audio" type="checkbox" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="capabilities">
+        <div class="toggle-grid">
+          <label class="toggle"><span data-i18n="fields.screenAnalysis">Screen analysis</span>
+            <input name="tools.screen_analysis" type="checkbox" />
+          </label>
+          <label class="toggle"><span data-i18n="fields.openConfiguration">Open configuration</span>
+            <input name="tools.open_configuration" type="checkbox" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="persona">
+        <div class="persona-library">
+          <div class="persona-library-row">
+            <label class="persona-field"><span data-i18n="fields.personaLibrary">Persona library</span>
+              <div class="persona-picker">
+                <select id="persona-library-select"></select>
+                <span class="persona-meta" id="persona-library-meta"></span>
+              </div>
+            </label>
+            <div class="persona-library-actions">
+              <button class="action" type="button" id="persona-create" data-i18n="actions.createPersona">New persona</button>
+              <button class="action" type="button" id="persona-edit" data-i18n="actions.editPersona">Edit</button>
+              <button class="action" type="button" id="persona-activate" data-i18n="actions.activatePersona">Activate</button>
+              <button class="action" type="button" id="persona-optimize" data-i18n="actions.optimizeSprites">Optimize sprites</button>
+              <button class="action" type="button" id="persona-export" data-i18n="actions.exportPersona">Export ZIP</button>
+              <button class="action danger" type="button" id="persona-delete" data-i18n="actions.deletePersona">Delete</button>
+              <button class="action primary" type="button" id="persona-open-files" data-i18n="actions.importPersonaBtn">Import persona</button>
+            </div>
+          </div>
+          <div class="persona-library-row">
+            <label class="persona-field"><span data-i18n="fields.personaName">Persona name</span>
+              <div class="persona-name-control">
+                <input id="persona-name-input" autocomplete="off" />
+                <button class="action" type="button" id="persona-save-name" data-i18n="actions.savePersonaName">Save name</button>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="persona-workspace">
+          <div class="persona-column">
+            <div class="persona-column-head">
+              <span data-i18n="persona.animationsTitle">Animations</span>
+              <button class="action" type="button" id="persona-add-animation" data-i18n="actions.addAnimation">Add animation</button>
+            </div>
+            <div class="persona-list" id="persona-list">
+              <div class="persona-row persona-head">
+                <div data-i18n="persona.columns.name">Name</div>
+                <div data-i18n="persona.columns.type">Type</div>
+                <div data-i18n="persona.columns.fps">FPS</div>
+                <div></div>
+              </div>
+            </div>
+          </div>
+          <div class="persona-editor">
+            <div class="persona-previews">
+              <div class="persona-sheet-preview">
+                <canvas id="persona-sheet-canvas" width="720" height="260"></canvas>
+              </div>
+              <div class="persona-preview">
+                <canvas id="persona-preview-canvas" width="176" height="176"></canvas>
+              </div>
+            </div>
+            <div class="persona-config">
+              <div class="persona-config-title" data-i18n="persona.editorTitle">Animation settings</div>
+              <div class="persona-edit-grid">
+              <label><span data-i18n="fields.animationName">Name</span>
+                <input id="persona-edit-name" />
+              </label>
+              <label><span data-i18n="fields.animationType">Type</span>
+                <select id="persona-edit-kind">
+                  <option value="idle" data-i18n="persona.type.idle">idle</option>
+                  <option value="talk" data-i18n="persona.type.talk">talk</option>
+                  <option value="thinking" data-i18n="persona.type.thinking">thinking</option>
+                  <option value="listening" data-i18n="persona.type.listening">listening</option>
+                  <option value="start" data-i18n="persona.type.start">start</option>
+                  <option value="poke" data-i18n="persona.type.poke">poke</option>
+                  <option value="error" data-i18n="persona.type.error">error</option>
+                </select>
+              </label>
+              <label><span data-i18n="fields.animationFile">File</span>
+                <select id="persona-edit-file"></select>
+              </label>
+              <label><span data-i18n="fields.frameSize">Frame size in px</span>
+                <input id="persona-edit-frame-size" type="number" min="1" step="1" />
+              </label>
+              <label><span data-i18n="fields.columns">Columns</span>
+                <input id="persona-edit-columns" type="number" min="1" step="1" />
+              </label>
+              <label><span data-i18n="fields.rows">Rows</span>
+                <input id="persona-edit-rows" type="number" min="1" step="1" />
+              </label>
+              <label><span data-i18n="fields.usedFrames">Used frames</span>
+                <input id="persona-edit-used-frames" type="number" min="1" step="1" />
+              </label>
+              <label><span data-i18n="fields.fps">FPS</span>
+                <input id="persona-edit-fps" type="number" min="1" step="1" />
+              </label>
+              <label id="persona-edit-idle-after-field"><span data-i18n="fields.idleAfter">Idle delay (s)</span>
+                <input id="persona-edit-idle-after" type="number" min="0" step="1" />
+              </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="persona-assets">
+          <div class="persona-assets-head">
+            <span data-i18n="persona.assetsTitle">Assets</span>
+            <div class="persona-asset-upload">
+              <input id="persona-upload" type="file" accept=".png,.jpg,.jpeg,.webp" />
+              <button class="action" type="button" id="persona-upload-btn" data-i18n="actions.uploadSprite">Upload sprite</button>
+            </div>
+          </div>
+          <div class="persona-asset-list" id="persona-asset-list"></div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="themes">
+        <div class="theme-stack">
+          <div class="model-section">
+            <div class="model-section-title" data-i18n="themes.presetsTitle">Presets</div>
+            <div class="theme-presets" id="theme-presets"></div>
+            <div class="hint" data-i18n="themes.presetsHint">Pick a starting style, then fine-tune below. The theme is global — it applies to every persona and is saved with the configuration.</div>
+          </div>
+          <div class="model-section">
+            <div class="model-section-title" data-i18n="themes.libraryTitle">My themes</div>
+            <div class="theme-presets" id="theme-library"></div>
+            <div class="hint" id="theme-library-empty" data-i18n="themes.libraryEmpty">No saved themes yet — customize below and save your first one.</div>
+            <div class="theme-library-row">
+              <input id="theme-name-input" autocomplete="off" data-i18n-placeholder="placeholders.themeName" placeholder="Theme name" />
+              <button class="action" type="button" id="theme-save-library" data-i18n="actions.saveTheme">Save current theme</button>
+            </div>
+          </div>
+          <div class="theme-workspace">
+            <div class="theme-controls">
+              <div class="model-section">
+                <div class="model-section-title" data-i18n="themes.fontTitle">Font</div>
+                <div class="grid">
+                  <label><span data-i18n="fields.themeFont">Subtitle font</span>
+                    <select id="theme-font-select"></select>
+                  </label>
+                  <label><span data-i18n="fields.themeFontSize">Font size</span>
+                    <input type="number" min="10" max="48" step="1" data-theme-path="subtitle.font_size" />
+                  </label>
+                </div>
+              </div>
+              <div class="model-section">
+                <div class="model-section-title" data-i18n="themes.bubbleTitle">Speech bubble</div>
+                <div class="grid three">
+                  <label><span data-i18n="fields.textColor">Text color</span>
+                    <input type="color" data-theme-path="subtitle.text_color" />
+                  </label>
+                  <label><span data-i18n="fields.backgroundColor">Background color</span>
+                    <input type="color" data-theme-path="subtitle.bg_color" />
+                  </label>
+                  <label><span data-i18n="fields.borderColor">Border color</span>
+                    <input type="color" data-theme-path="subtitle.border_color" />
+                  </label>
+                </div>
+                <div class="grid three">
+                  <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
+                    <input type="checkbox" data-theme-path="subtitle.bg_gradient" />
+                  </label>
+                  <label><span data-i18n="fields.gradientColor2">Second color</span>
+                    <input type="color" data-theme-path="subtitle.bg_color2" />
+                  </label>
+                  <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
+                    <select data-theme-path="subtitle.gradient_direction">
+                      <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
+                      <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
+                      <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="grid three">
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="subtitle.bg_opacity"></b></div>
+                    <input type="range" min="0" max="100" step="1" data-theme-path="subtitle.bg_opacity" />
+                  </div>
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="subtitle.border_radius"></b></div>
+                    <input type="range" min="0" max="44" step="1" data-theme-path="subtitle.border_radius" />
+                  </div>
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="subtitle.border_width"></b></div>
+                    <input type="range" min="0" max="6" step="1" data-theme-path="subtitle.border_width" />
+                  </div>
+                </div>
+                <div class="grid three">
+                  <label class="toggle"><span data-i18n="fields.nameTag">Show character name</span>
+                    <input type="checkbox" data-theme-path="subtitle.name_tag" />
+                  </label>
+                  <label><span data-i18n="fields.nameColor">Name color</span>
+                    <input type="color" data-theme-path="subtitle.name_color" />
+                  </label>
+                  <label><span data-i18n="fields.highlightColor">Spoken word color</span>
+                    <input type="color" data-theme-path="subtitle.highlight_color" />
+                  </label>
+                </div>
+              </div>
+              <div class="model-section">
+                <div class="model-section-title" data-i18n="themes.inputTitle">Text input</div>
+                <div class="grid three">
+                  <label><span data-i18n="fields.textColor">Text color</span>
+                    <input type="color" data-theme-path="input.text_color" />
+                  </label>
+                  <label><span data-i18n="fields.backgroundColor">Background color</span>
+                    <input type="color" data-theme-path="input.bg_color" />
+                  </label>
+                  <label><span data-i18n="fields.borderColor">Border color</span>
+                    <input type="color" data-theme-path="input.border_color" />
+                  </label>
+                </div>
+                <div class="grid three">
+                  <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
+                    <input type="checkbox" data-theme-path="input.bg_gradient" />
+                  </label>
+                  <label><span data-i18n="fields.gradientColor2">Second color</span>
+                    <input type="color" data-theme-path="input.bg_color2" />
+                  </label>
+                  <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
+                    <select data-theme-path="input.gradient_direction">
+                      <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
+                      <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
+                      <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="grid three">
+                  <label><span data-i18n="fields.focusBorderColor">Focus border color</span>
+                    <input type="color" data-theme-path="input.focus_border_color" />
+                  </label>
+                  <label><span data-i18n="fields.micColor">Mic button color</span>
+                    <input type="color" data-theme-path="input.mic_color" />
+                  </label>
+                  <div></div>
+                </div>
+                <div class="grid three">
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="input.bg_opacity"></b></div>
+                    <input type="range" min="0" max="100" step="1" data-theme-path="input.bg_opacity" />
+                  </div>
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="input.border_radius"></b></div>
+                    <input type="range" min="0" max="25" step="1" data-theme-path="input.border_radius" />
+                  </div>
+                  <div class="theme-range">
+                    <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="input.border_width"></b></div>
+                    <input type="range" min="0" max="6" step="1" data-theme-path="input.border_width" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="theme-preview-card">
+              <div class="model-section-title" data-i18n="themes.previewTitle">Live preview</div>
+              <div class="theme-preview">
+                <div class="theme-preview-bubble" id="theme-preview-bubble">
+                  <div class="theme-preview-name" id="theme-preview-name" hidden>NOAH</div>
+                  <span id="theme-preview-text"></span>
+                </div>
+                <div class="theme-preview-field" id="theme-preview-field">
+                  <span id="theme-preview-placeholder" data-i18n="themes.previewPlaceholder">Type your message</span>
+                  <span class="theme-preview-mic" id="theme-preview-mic"><img src="/persona/icons/mic.svg" alt="" /></span>
+                </div>
+              </div>
+              <div class="hint" data-i18n="themes.previewHint">The overlay updates as soon as you save the configuration.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="mcps">
+        <div class="grid one">
+          <label><span data-i18n="fields.homeAssistantMcpUrl">Home Assistant MCP URL</span>
+            <input name="mcps.home_assistant.url" id="ha-mcp-url" autocomplete="off" data-i18n-placeholder="placeholders.homeAssistantMcpUrl" placeholder="http://homeassistant.local:9583/private_..." />
+          </label>
+          <div class="toggle-grid">
+            <label class="toggle"><span data-i18n="fields.enableHomeAssistant">Enable Home Assistant</span>
+              <input name="mcps.home_assistant.enabled" type="checkbox" />
+            </label>
+          </div>
+          <div class="meter-card">
+            <div class="meter-head">
+              <div class="meter-title">
+                <strong data-i18n="ha.validationTitle">Home Assistant validation</strong>
+                <span data-i18n="ha.validationSubtitle">Connects to MCP and refreshes the tool cache</span>
+              </div>
+              <button class="action" type="button" id="ha-mcp-validate" data-i18n="actions.validateConnection">Validate connection</button>
+            </div>
+            <div class="hint" id="ha-mcp-status" data-i18n="ha.initialStatus">Enter the URL and validate the connection.</div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-head">
+              <div class="meter-title">
+                <strong data-i18n="mcp.externalTitle">External MCP servers</strong>
+                <span data-i18n="mcp.externalSubtitle">Add Streamable HTTP MCP servers that the assistant can call as tools</span>
+              </div>
+              <button class="action" type="button" id="mcp-add-server" data-i18n="actions.addMcp">Add MCP</button>
+            </div>
+            <div class="hint" id="mcp-status"></div>
+            <div class="device-list" id="mcp-server-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="devices">
+        <div class="device-toolbar">
+          <input id="devices-filter" type="search" data-i18n-placeholder="placeholders.deviceFilter" placeholder="Search by name, entity, domain, or alias" />
+          <span class="persona-meta" id="devices-summary" data-i18n="sections.devices.hint">Local Home Assistant cache</span>
+          <button class="action" type="button" id="devices-toggle-all" data-i18n="actions.selectAll">Select all</button>
+          <button class="action" type="button" id="devices-refresh" data-i18n="actions.importFromMcp">Import from MCP</button>
+          <button class="action primary" type="button" id="devices-save" data-i18n="actions.saveDevices">Save devices</button>
+        </div>
+        <div class="device-list" id="devices-list">
+          <div class="device-row device-head">
+            <div data-i18n="devices.columns.use">Use</div>
+            <div data-i18n="devices.columns.name">Name</div>
+            <div data-i18n="devices.columns.domainEntity">Domain / Entity</div>
+            <div data-i18n="devices.columns.aliases">Aliases</div>
+            <div></div>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <div class="actions">
+      <span id="status"></span>
+      <button class="action" type="button" id="reload" data-i18n="actions.reload">Reload</button>
+      <button class="action primary" type="submit" form="form" data-i18n="actions.saveConfig">Save configuration</button>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="hotkey-modal" hidden>
+    <div class="modal">
+      <h3 data-i18n="modal.hotkey.title">Press any button</h3>
+      <p data-i18n="modal.hotkey.body">Use a keyboard key or mouse button to define push-to-talk.</p>
+      <button class="action" type="button" id="cancel-hotkey" data-i18n="actions.cancel">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="persona-files-modal" hidden>
+    <div class="modal persona-files-modal">
+      <h3 data-i18n="modal.personaImport.title">Import persona</h3>
+      <p data-i18n="modal.personaImport.body">Import a ready-made persona package (.zip) containing its persona_config.json and sprites.</p>
+      <div class="persona-files-grid">
+        <div class="persona-file-option">
+          <strong data-i18n="modal.personaFiles.importTitle">Import persona ZIP</strong>
+          <span data-i18n="modal.personaFiles.importHint">Imports a package with persona_config.json and sprites.</span>
+          <input id="persona-import" type="file" accept=".zip" />
+          <button class="action" type="button" id="persona-import-btn" data-i18n="actions.importPersona">Import ZIP</button>
+        </div>
+      </div>
+      <button class="action" type="button" id="persona-close-files" data-i18n="actions.close">Close</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="persona-create-modal" hidden>
+    <div class="modal">
+      <h3 data-i18n="modal.personaCreate.title">New persona</h3>
+      <p data-i18n="modal.personaCreate.body">Pick a name. The new persona starts empty — add at least one idle animation before you can activate it.</p>
+      <input id="persona-create-name" autocomplete="off" data-i18n-placeholder="placeholders.personaName" placeholder="Persona name" />
+      <div class="modal-actions">
+        <button class="action" type="button" id="persona-create-cancel" data-i18n="actions.cancel">Cancel</button>
+        <button class="action primary" type="button" id="persona-create-confirm" data-i18n="actions.create">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="persona-delete-modal" hidden>
+    <div class="modal">
+      <h3 data-i18n="modal.personaDelete.title">Delete persona</h3>
+      <p id="persona-delete-message"></p>
+      <div class="modal-actions">
+        <button class="action" type="button" id="persona-delete-cancel" data-i18n="actions.cancel">Cancel</button>
+        <button class="action danger" type="button" id="persona-delete-confirm" data-i18n="actions.deletePersona">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/toast.js"></script>
+  <script>
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+      const headers = new Headers(init.headers || {});
+      if (window.BITMON_LOCAL_TOKEN && window.BITMON_TOKEN_HEADER) {
+        headers.set(window.BITMON_TOKEN_HEADER, window.BITMON_LOCAL_TOKEN);
+      }
+      return nativeFetch(input, {...init, headers});
+    };
+
+    const form = document.querySelector("#form");
+    const statusEl = document.querySelector("#status");
+    const localeSelect = document.querySelector("#locale-select");
+    const tabs = document.querySelectorAll("[data-tab]");
+    const panels = document.querySelectorAll("[data-panel]");
+    const chatMessages = document.querySelector("#chat-messages");
+    const chatEmpty = document.querySelector("#chat-empty");
+    const chatInput = document.querySelector("#chat-input");
+    const chatSend = document.querySelector("#chat-send");
+    const chatClear = document.querySelector("#chat-clear");
+    const meterToggle = document.querySelector("#meter-toggle");
+    const meterFill = document.querySelector("#meter-fill");
+    const meterThreshold = document.querySelector("#meter-threshold");
+    const meterRms = document.querySelector("#meter-rms");
+    const meterThresholdValue = document.querySelector("#meter-threshold-value");
+    const meterState = document.querySelector("#meter-state");
+    const voiceResponseToggle = document.querySelector("#voice-response-toggle");
+    const llmProviderSelect = document.querySelector("#llm-provider-select");
+    const ttsProviderSelect = document.querySelector("#tts-provider-select");
+    const llmInworldFields = document.querySelector("#llm-inworld-fields");
+    const llmLocalFields = document.querySelector("#llm-local-fields");
+    const ttsSection = document.querySelector("#tts-section");
+    const ttsInworldFields = document.querySelector("#tts-inworld-fields");
+    const ttsKokoroFields = document.querySelector("#tts-kokoro-fields");
+    const whisperHotkeyField = document.querySelector("#whisper-hotkey-field");
+    const whisperHotkeyInput = document.querySelector("#whisper-hotkey-input");
+    const captureHotkey = document.querySelector("#capture-hotkey");
+    const clearHotkeys = document.querySelector("#clear-hotkeys");
+    const wakeWordModelSelect = document.querySelector("#wake-word-model-select");
+    const kokoroModelSelect = document.querySelector("#kokoro-model-select");
+    const kokoroVoiceSelect = document.querySelector("#kokoro-voice-select");
+    const kokoroLangSelect = document.querySelector("#kokoro-lang-select");
+    const lmstudioBaseUrl = document.querySelector("#lmstudio-base-url");
+    const lmstudioModelSelect = document.querySelector("#lmstudio-model-select");
+    const lmstudioModelsRefresh = document.querySelector("#lmstudio-models-refresh");
+    const hotkeyModal = document.querySelector("#hotkey-modal");
+    const cancelHotkey = document.querySelector("#cancel-hotkey");
+    const haMcpUrl = document.querySelector("#ha-mcp-url");
+    const haMcpValidate = document.querySelector("#ha-mcp-validate");
+    const haMcpStatus = document.querySelector("#ha-mcp-status");
+    const haEnabledInput = document.querySelector('[name="mcps.home_assistant.enabled"]');
+    const mcpAddServer = document.querySelector("#mcp-add-server");
+    const mcpServerList = document.querySelector("#mcp-server-list");
+    const mcpStatus = document.querySelector("#mcp-status");
+    const devicesTab = document.querySelector("#devices-tab");
+    const devicesList = document.querySelector("#devices-list");
+    const devicesFilter = document.querySelector("#devices-filter");
+    const devicesToggleAll = document.querySelector("#devices-toggle-all");
+    const devicesRefresh = document.querySelector("#devices-refresh");
+    const devicesSave = document.querySelector("#devices-save");
+    const devicesSummary = document.querySelector("#devices-summary");
+    const personaLibrarySelect = document.querySelector("#persona-library-select");
+    const personaLibraryMeta = document.querySelector("#persona-library-meta");
+    const personaNameInput = document.querySelector("#persona-name-input");
+    const personaSaveName = document.querySelector("#persona-save-name");
+    const personaCreate = document.querySelector("#persona-create");
+    const personaCreateModal = document.querySelector("#persona-create-modal");
+    const personaCreateName = document.querySelector("#persona-create-name");
+    const personaCreateCancel = document.querySelector("#persona-create-cancel");
+    const personaCreateConfirm = document.querySelector("#persona-create-confirm");
+    const personaEdit = document.querySelector("#persona-edit");
+    const personaActivate = document.querySelector("#persona-activate");
+    const personaOptimize = document.querySelector("#persona-optimize");
+    const personaExport = document.querySelector("#persona-export");
+    const personaDelete = document.querySelector("#persona-delete");
+    const personaOpenFiles = document.querySelector("#persona-open-files");
+    const personaFilesModal = document.querySelector("#persona-files-modal");
+    const personaCloseFiles = document.querySelector("#persona-close-files");
+    const personaDeleteModal = document.querySelector("#persona-delete-modal");
+    const personaDeleteMessage = document.querySelector("#persona-delete-message");
+    const personaDeleteCancel = document.querySelector("#persona-delete-cancel");
+    const personaDeleteConfirm = document.querySelector("#persona-delete-confirm");
+    const personaImport = document.querySelector("#persona-import");
+    const personaImportBtn = document.querySelector("#persona-import-btn");
+    const personaList = document.querySelector("#persona-list");
+    const personaAssetList = document.querySelector("#persona-asset-list");
+    const personaUpload = document.querySelector("#persona-upload");
+    const personaUploadBtn = document.querySelector("#persona-upload-btn");
+    const personaAddAnimation = document.querySelector("#persona-add-animation");
+    const personaSheetCanvas = document.querySelector("#persona-sheet-canvas");
+    const personaPreviewCanvas = document.querySelector("#persona-preview-canvas");
+    const personaEditName = document.querySelector("#persona-edit-name");
+    const personaEditKind = document.querySelector("#persona-edit-kind");
+    const personaEditFile = document.querySelector("#persona-edit-file");
+    const personaEditFrameSize = document.querySelector("#persona-edit-frame-size");
+    const personaEditColumns = document.querySelector("#persona-edit-columns");
+    const personaEditRows = document.querySelector("#persona-edit-rows");
+    const personaEditUsedFrames = document.querySelector("#persona-edit-used-frames");
+    const personaEditFps = document.querySelector("#persona-edit-fps");
+    const personaEditIdleAfter = document.querySelector("#persona-edit-idle-after");
+    const personaEditIdleAfterField = document.querySelector("#persona-edit-idle-after-field");
+    let devices = [];
+    let devicesDirty = false;
+    let mcpServers = [];
+    let personaLibrary = {active: "", personas: []};
+    let personaConfig = null;
+    let personaAssets = [];
+    let personaEditingIndex = 0;
+    let personaPreviewTimer = 0;
+    let personaPreviewFrame = 0;
+    let personaPreviewImage = new Image();
+    let personaPreviewImageFile = "";
+    let personaSheetSignature = "";
+    let audioContext = null;
+    let micStream = null;
+    let analyser = null;
+    let meterData = null;
+    let meterFrame = 0;
+    let lastMeterRms = 0;
+    let kokoroVoices = [];
+    let hotkeyCapturePoll = 0;
+    let wakeWordModels = [];
+    let hotkeyCaptureHistoryArmed = false;
+    let suppressCapturedMouseButton = -1;
+    let suppressCapturedMouseUntil = 0;
+    let pendingPersonaDeleteId = "";
+    const meterMaxRms = 0.1;
+    let capturingHotkey = false;
+    const DEFAULT_LOCALE = "en-US";
+    let currentLocale = DEFAULT_LOCALE;
+    let translations = {};
+    let fallbackTranslations = {};
+    let availableLocales = [{locale: DEFAULT_LOCALE, name: "English"}];
+
+    function formatTemplate(template, values = {}) {
+      return String(template).replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => {
+        return values[key] === undefined ? "" : String(values[key]);
+      });
+    }
+
+    function t(key, values = {}) {
+      const template = translations[key] ?? fallbackTranslations[key] ?? key;
+      return formatTemplate(template, values);
+    }
+
+    function setText(element, key, values = {}) {
+      if (element) element.textContent = t(key, values);
+    }
+
+    function setStatus(key, values = {}) {
+      setText(statusEl, key, values);
+    }
+
+    function notify(key, type = "success", values = {}, position = "top") {
+      if (typeof window.toast === "function") {
+        window.toast(t(key, values), type, position);
+      }
+    }
+
+    function applyTranslations() {
+      document.documentElement.lang = currentLocale;
+      document.title = t("app.title");
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.i18n);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+        element.placeholder = t(element.dataset.i18nPlaceholder);
+      });
+      document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+        element.title = t(element.dataset.i18nTitle);
+      });
+      document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+        element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+      });
+      renderLocaleOptions();
+      updateMeterUi(lastMeterRms);
+      renderMcpServers();
+      if (devices.length) renderDevices();
+      renderPersonaLibrary();
+      if (personaConfig) renderPersonaAnimations();
+      if (themeConfig) renderThemeEditor();
+      chatRenderSignature = "";
+    }
+
+    function renderLocaleOptions() {
+      if (!localeSelect) return;
+      const selected = localeSelect.value || currentLocale;
+      localeSelect.innerHTML = "";
+      for (const locale of availableLocales) {
+        const option = document.createElement("option");
+        option.value = locale.locale;
+        option.textContent = locale.name || locale.locale;
+        localeSelect.appendChild(option);
+      }
+      ensureSelectValue(localeSelect, currentLocale || selected);
+    }
+
+    async function fetchCatalog(locale) {
+      const res = await fetch(`/api/i18n/${encodeURIComponent(locale)}`);
+      if (!res.ok) return {};
+      return await res.json();
+    }
+
+    async function setLocale(locale, options = {}) {
+      const nextLocale = locale || DEFAULT_LOCALE;
+      if (!Object.keys(fallbackTranslations).length || nextLocale === DEFAULT_LOCALE) {
+        fallbackTranslations = await fetchCatalog(DEFAULT_LOCALE);
+      }
+      translations = nextLocale === DEFAULT_LOCALE ? fallbackTranslations : await fetchCatalog(nextLocale);
+      currentLocale = translations._meta?.locale || nextLocale;
+      applyTranslations();
+      if (options.showStatus) setStatus("status.localeChanged");
+    }
+
+    async function loadLocales() {
+      const res = await fetch("/api/i18n/locales");
+      if (!res.ok) return;
+      const data = await res.json();
+      availableLocales = Array.isArray(data.locales) && data.locales.length ? data.locales : availableLocales;
+      renderLocaleOptions();
+    }
+
+    function getPath(obj, path) {
+      return path.split(".").reduce((acc, key) => acc?.[key], obj);
+    }
+
+    function setPath(obj, path, value) {
+      const parts = path.split(".");
+      const last = parts.pop();
+      const parent = parts.reduce((acc, key) => acc[key] ??= {}, obj);
+      parent[last] = value;
+    }
+
+    function setActiveTab(name) {
+      tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === name));
+      panels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === name));
+      if (name === "persona") {
+        requestAnimationFrame(() => {
+          personaSheetSignature = "";
+          drawPersonaSheetPreview();
+          drawPersonaPreviewFrame();
+        });
+      }
+      if (name === "chat") startChatPolling();
+      else stopChatPolling();
+    }
+
+    let chatPollTimer = null;
+    let chatRenderSignature = "";
+
+    function startChatPolling() {
+      fetchChatHistory();
+      if (chatPollTimer === null) {
+        chatPollTimer = window.setInterval(fetchChatHistory, 2000);
+      }
+    }
+
+    function stopChatPolling() {
+      if (chatPollTimer !== null) {
+        window.clearInterval(chatPollTimer);
+        chatPollTimer = null;
+      }
+    }
+
+    function renderChatMessages(messages) {
+      const signature = messages.map((m) => `${m.id}:${m.text.length}`).join("|");
+      if (signature === chatRenderSignature) return;
+      chatRenderSignature = signature;
+      const nearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 80;
+      chatMessages.innerHTML = "";
+      if (!messages.length) {
+        const empty = document.createElement("div");
+        empty.className = "chat-empty";
+        empty.textContent = t("chat.empty");
+        chatMessages.appendChild(empty);
+        return;
+      }
+      for (const message of messages) {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble ${message.role === "user" ? "user" : "assistant"}`;
+        bubble.textContent = message.text;
+        chatMessages.appendChild(bubble);
+      }
+      if (nearBottom) chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function fetchChatHistory() {
+      try {
+        const res = await fetch("/api/chat/history");
+        if (!res.ok) return;
+        const data = await res.json();
+        renderChatMessages(Array.isArray(data.messages) ? data.messages : []);
+      } catch (err) {
+        // Keep the last rendered state; polling will retry.
+      }
+    }
+
+    async function sendChatMessage() {
+      const text = (chatInput.value || "").trim();
+      if (!text) return;
+      chatInput.value = "";
+      autoResizeChatInput();
+      try {
+        const res = await fetch("/api/chat/send", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({text}),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          chatInput.value = text;
+          autoResizeChatInput();
+          return;
+        }
+        // The pet answers asynchronously; poll a few times to catch the reply.
+        fetchChatHistory();
+        [400, 1200, 2500, 4500].forEach((delay) => window.setTimeout(fetchChatHistory, delay));
+      } catch (err) {
+        notify("status.chatSendError", "error", {error: err.message});
+        chatInput.value = text;
+        autoResizeChatInput();
+      }
+    }
+
+    async function clearChatHistory() {
+      try {
+        await fetch("/api/chat/clear", {method: "POST"});
+        // Force a re-render: an empty list has signature "", so leaving the old
+        // signature in place would trip renderChatMessages' early-return and the
+        // bubbles would stay on screen until a manual refresh.
+        chatRenderSignature = null;
+        renderChatMessages([]);
+        notify("status.chatCleared", "success");
+      } catch (err) {
+        notify("status.chatSendError", "error", {error: err.message});
+      }
+    }
+
+    function autoResizeChatInput() {
+      if (!chatInput) return;
+      chatInput.style.height = "auto";
+      chatInput.style.height = `${Math.min(chatInput.scrollHeight, 120)}px`;
+    }
+
+    function syncDevicesTabVisibility() {
+      const visible = Boolean(haEnabledInput?.checked);
+      devicesTab.hidden = !visible;
+      if (!visible && devicesTab.classList.contains("active")) setActiveTab("mcps");
+      if (visible && devices.length === 0) loadDevices().catch((err) => {
+        setText(devicesSummary, "status.devicesLoadError", {error: err.message});
+      });
+    }
+
+
+    function syncModelVisibility() {
+      const llmProvider = llmProviderSelect.value || "inworld";
+      const ttsProvider = ttsProviderSelect.value || "inworld";
+      const voiceEnabled = Boolean(voiceResponseToggle.checked);
+      llmInworldFields.hidden = llmProvider !== "inworld";
+      llmLocalFields.hidden = llmProvider !== "local";
+      ttsSection.hidden = !voiceEnabled;
+      ttsInworldFields.hidden = !voiceEnabled || ttsProvider !== "inworld";
+      ttsKokoroFields.hidden = !voiceEnabled || ttsProvider !== "kokoro";
+      whisperHotkeyField.hidden = false;
+    }
+
+    function ensureSelectValue(select, value, label) {
+      if (!select || !value) return;
+      const exists = Array.from(select.options).some((option) => option.value === value);
+      if (!exists) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label || value;
+        select.appendChild(option);
+      }
+      select.value = value;
+    }
+
+    function kokoroVoiceLang(voice) {
+      return voice?.lang_code || String(voice?.id || "").charAt(0);
+    }
+
+    function renderKokoroLanguages(selectedCode) {
+      const current = selectedCode || kokoroLangSelect.value;
+      kokoroLangSelect.innerHTML = "";
+      const seen = new Set();
+      for (const voice of kokoroVoices) {
+        const code = kokoroVoiceLang(voice);
+        if (!code || seen.has(code)) continue;
+        seen.add(code);
+        const option = document.createElement("option");
+        option.value = code;
+        option.textContent = voice.language || code;
+        kokoroLangSelect.appendChild(option);
+      }
+      ensureSelectValue(kokoroLangSelect, current || "p");
+    }
+
+    function renderKokoroVoiceOptions(selectedValue) {
+      const lang = kokoroLangSelect.value || "p";
+      const filtered = kokoroVoices.filter((voice) => kokoroVoiceLang(voice) === lang);
+      kokoroVoiceSelect.innerHTML = "";
+      for (const voice of filtered) {
+        const option = document.createElement("option");
+        option.value = voice.id;
+        option.textContent = `${voice.name || voice.id} (${voice.id})`;
+        kokoroVoiceSelect.appendChild(option);
+      }
+      // Never carry a voice from another language: fall back to the first
+      // voice of the selected language when the previous one does not match.
+      const preferred = filtered.some((voice) => voice.id === selectedValue)
+        ? selectedValue
+        : filtered[0]?.id;
+      ensureSelectValue(kokoroVoiceSelect, preferred || selectedValue || "pf_dora");
+    }
+
+    function renderKokoroVoices(voices, selectedValue) {
+      kokoroVoices = Array.isArray(voices) ? voices : [];
+      const selectedVoice = kokoroVoices.find((voice) => voice.id === selectedValue);
+      renderKokoroLanguages(selectedVoice ? kokoroVoiceLang(selectedVoice) : "");
+      renderKokoroVoiceOptions(selectedValue);
+    }
+
+
+    function renderKokoroModels(models, selectedValue) {
+      kokoroModelSelect.innerHTML = "";
+      for (const model of models || []) {
+        const id = typeof model === "string" ? model : model.id;
+        if (!id) continue;
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = model.name ? `${model.name} (${id})` : id;
+        kokoroModelSelect.appendChild(option);
+      }
+      ensureSelectValue(kokoroModelSelect, selectedValue || "hexgrad/Kokoro-82M");
+    }
+
+    function renderLmStudioModels(models, selectedValue) {
+      lmstudioModelSelect.innerHTML = "";
+      for (const model of models || []) {
+        const id = typeof model === "string" ? model : model.id;
+        if (!id) continue;
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = id;
+        lmstudioModelSelect.appendChild(option);
+      }
+      ensureSelectValue(lmstudioModelSelect, selectedValue || "local-model");
+    }
+
+    function renderWakeWordModels(selectedValue = wakeWordModelSelect.value) {
+      wakeWordModelSelect.innerHTML = "";
+      const models = wakeWordModels.length ? wakeWordModels : [{
+        value: "builtin:hey_jarvis",
+        label: "Hey Jarvis",
+        type: "builtin",
+      }];
+      for (const model of models) {
+        const option = document.createElement("option");
+        option.value = model.value;
+        option.textContent = model.type === "file" ? `${model.label} (${model.path})` : model.label;
+        wakeWordModelSelect.appendChild(option);
+      }
+      ensureSelectValue(wakeWordModelSelect, selectedValue || "builtin:hey_jarvis");
+    }
+
+    async function loadKokoroVoices(selectedValue = kokoroVoiceSelect.value) {
+      const res = await fetch("/api/local/kokoro/voices");
+      const data = await res.json();
+      renderKokoroVoices(data.voices || [], selectedValue);
+    }
+
+    async function loadKokoroModels(selectedValue = kokoroModelSelect.value) {
+      const res = await fetch("/api/local/kokoro/models");
+      const data = await res.json();
+      renderKokoroModels(data.models || [], selectedValue);
+    }
+
+    async function loadWakeWordModels(selectedValue = wakeWordModelSelect.value) {
+      const res = await fetch("/api/wake-word/models");
+      const data = await res.json();
+      wakeWordModels = data.models || [];
+      renderWakeWordModels(selectedValue);
+    }
+
+    async function refreshLmStudioModels() {
+      const selected = lmstudioModelSelect.value;
+      lmstudioModelsRefresh.disabled = true;
+      setStatus("status.fetchingLmStudioModels");
+      try {
+        const res = await fetch("/api/local/lmstudio/models", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({base_url: lmstudioBaseUrl.value.trim()}),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          setStatus("status.modelFetchFailed", {error: data.error || t("status.unknownError")});
+          return;
+        }
+        renderLmStudioModels(data.models || [], selected);
+        setStatus("status.modelsLoaded", {count: (data.models || []).length});
+      } finally {
+        lmstudioModelsRefresh.disabled = false;
+      }
+    }
+
+    function openHotkeyCapture() {
+      capturingHotkey = true;
+      hotkeyModal.hidden = false;
+      if (!hotkeyCaptureHistoryArmed) {
+        history.pushState({hotkeyCapture: true}, "", location.href);
+        hotkeyCaptureHistoryArmed = true;
+      }
+      if (hotkeyCapturePoll) clearInterval(hotkeyCapturePoll);
+      fetch("/api/input/hotkey-capture/start", {method: "POST"}).catch((err) => {
+        setStatus("status.globalCaptureUnavailable", {error: err.message});
+      });
+      hotkeyCapturePoll = setInterval(async () => {
+        try {
+          const res = await fetch("/api/input/hotkey-capture/result");
+          const data = await res.json();
+          if (data.value) {
+            setCapturedHotkey(data.value);
+          } else if (!data.active && data.error) {
+            setStatus("status.globalCaptureMessage", {error: data.error});
+          }
+        } catch (err) {
+          setStatus("status.globalCaptureError", {error: err.message});
+        }
+      }, 120);
+    }
+
+
+    function closeHotkeyCapture() {
+      capturingHotkey = false;
+      hotkeyModal.hidden = true;
+      hotkeyCaptureHistoryArmed = false;
+      if (hotkeyCapturePoll) clearInterval(hotkeyCapturePoll);
+      hotkeyCapturePoll = 0;
+      fetch("/api/input/hotkey-capture/cancel", {method: "POST"}).catch(() => {});
+    }
+
+    function hotkeyTextToList(text) {
+      const seen = new Set();
+      return String(text || "")
+        .split(",")
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => {
+          if (!value || seen.has(value)) return false;
+          seen.add(value);
+          return true;
+        });
+    }
+
+    function hotkeyListToText(values) {
+      return hotkeyTextToList(Array.isArray(values) ? values.join(",") : values).join(", ");
+    }
+
+    function setCapturedHotkey(value) {
+      const hotkeys = hotkeyTextToList(whisperHotkeyInput.value);
+      const normalized = String(value || "").trim().toLowerCase();
+      if (normalized && !hotkeys.includes(normalized)) hotkeys.push(normalized);
+      whisperHotkeyInput.value = hotkeyListToText(hotkeys);
+      whisperHotkeyInput.dispatchEvent(new Event("input", {bubbles: true}));
+      if (hotkeyCapturePoll) clearInterval(hotkeyCapturePoll);
+      hotkeyCapturePoll = 0;
+      closeHotkeyCapture();
+      setStatus("status.hotkeyAdded");
+    }
+
+
+    function normalizeCapturedKey(event) {
+      const key = String(event.key || "").toLowerCase();
+      if (!key) return "";
+      const aliases = {
+        " ": "space",
+        "escape": "esc",
+        "arrowup": "up",
+        "arrowdown": "down",
+        "arrowleft": "left",
+        "arrowright": "right",
+        "control": "ctrl",
+      };
+      return aliases[key] || key;
+    }
+
+    function normalizeCapturedMouse(button) {
+      const buttonNumber = Number(button);
+      if (buttonNumber < 0 || !Number.isFinite(buttonNumber)) return "";
+      return `mouse${buttonNumber + 1}`;
+    }
+
+    function handleCapturedMouseEvent(event) {
+      const buttonNumber = Number(event.button);
+      if (!capturingHotkey) {
+        if (
+          Number.isFinite(buttonNumber)
+          && buttonNumber === suppressCapturedMouseButton
+          && performance.now() < suppressCapturedMouseUntil
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation?.();
+        }
+        return;
+      }
+      if (event.target?.closest?.("#cancel-hotkey")) return;
+      const value = normalizeCapturedMouse(buttonNumber);
+      if (!value) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      suppressCapturedMouseButton = buttonNumber;
+      suppressCapturedMouseUntil = performance.now() + 900;
+      setCapturedHotkey(value);
+    }
+
+    function syncRange(name, value) {
+      const range = document.querySelector(`[data-range="${name}"]`);
+      const number = document.querySelector(`[data-range-value="${name}"]`);
+      if (range) range.value = value;
+      if (number) number.value = value;
+    }
+
+    function currentNumber(name, fallback) {
+      const input = document.querySelector(`[data-range-value="${name}"]`);
+      const value = Number(input?.value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function updateMeterUi(rawRms) {
+      lastMeterRms = rawRms;
+      const gain = currentNumber("microphone.gain", 1);
+      const threshold = currentNumber("microphone.vad_threshold", 0.004);
+      const rms = rawRms * gain;
+      const level = Math.max(0, Math.min(1, rms / meterMaxRms));
+      const thresholdPos = Math.max(0, Math.min(1, threshold / meterMaxRms));
+      const active = rms >= threshold;
+
+      meterFill.style.width = `${level * 100}%`;
+      meterFill.classList.toggle("active", active);
+      meterThreshold.style.left = `${thresholdPos * 100}%`;
+      meterRms.textContent = rms.toFixed(4);
+      meterThresholdValue.textContent = threshold.toFixed(4);
+      meterState.textContent = micStream ? (active ? t("meter.voice") : t("meter.silence")) : t("meter.stopped");
+    }
+
+
+    function meterLoop() {
+      analyser.getFloatTimeDomainData(meterData);
+      let sum = 0;
+      for (let i = 0; i < meterData.length; i += 1) {
+        sum += meterData[i] * meterData[i];
+      }
+      updateMeterUi(Math.sqrt(sum / meterData.length));
+      meterFrame = requestAnimationFrame(meterLoop);
+    }
+
+    async function startMeter() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setStatus("status.browserMicDenied");
+        return;
+      }
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false},
+      });
+      audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(micStream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      meterData = new Float32Array(analyser.fftSize);
+      source.connect(analyser);
+      meterToggle.textContent = t("actions.stopTest");
+      meterState.textContent = t("meter.listening");
+      meterLoop();
+    }
+
+
+    async function stopMeter() {
+      if (meterFrame) cancelAnimationFrame(meterFrame);
+      meterFrame = 0;
+      if (micStream) micStream.getTracks().forEach((track) => track.stop());
+      micStream = null;
+      analyser = null;
+      meterData = null;
+      if (audioContext) await audioContext.close();
+      audioContext = null;
+      meterToggle.textContent = t("actions.startTest");
+      updateMeterUi(0);
+    }
+
+
+    function aliasesToText(aliases) {
+      return (aliases || []).join(", ");
+    }
+
+    function textToAliases(text) {
+      const seen = new Set();
+      return String(text || "")
+        .split(",")
+        .map((alias) => alias.trim())
+        .filter((alias) => {
+          const key = alias.toLowerCase();
+          if (!alias || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function normalizeMcpId(value, fallback) {
+      const id = String(value || fallback || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+      return id || fallback || "mcp_server";
+    }
+
+    function ensureMcpServerIds() {
+      const seen = new Set();
+      mcpServers.forEach((server, index) => {
+        let id = normalizeMcpId(server.id || server.name, `mcp_${index + 1}`);
+        const base = id;
+        let suffix = 2;
+        while (seen.has(id)) {
+          id = `${base}_${suffix}`;
+          suffix += 1;
+        }
+        seen.add(id);
+        server.id = id;
+      });
+    }
+
+    function renderMcpServers() {
+      ensureMcpServerIds();
+      mcpServerList.innerHTML = `
+        <div class="mcp-row device-head">
+          <div>${escapeHtml(t("mcp.columns.enabled"))}</div>
+          <div>${escapeHtml(t("mcp.columns.name"))}</div>
+          <div>${escapeHtml(t("mcp.columns.url"))}</div>
+          <div>${escapeHtml(t("mcp.columns.auth"))}</div>
+          <div>${escapeHtml(t("mcp.columns.token"))}</div>
+          <div>${escapeHtml(t("mcp.columns.description"))}</div>
+          <div></div>
+        </div>
+      `;
+      mcpServers.forEach((server, index) => {
+        const row = document.createElement("div");
+        row.className = "mcp-row";
+        const authType = server.auth_type || "none";
+        const tokenPlaceholder = server.bearer_token_configured
+          ? t("placeholders.keepCurrentToken")
+          : t("placeholders.bearerToken");
+        row.innerHTML = `
+          <input data-mcp-enabled="${index}" type="checkbox" ${server.enabled ? "checked" : ""} />
+          <input data-mcp-name="${index}" value="${escapeHtml(server.name || "")}" placeholder="${escapeHtml(t("placeholders.mcpName"))}" />
+          <input data-mcp-url="${index}" value="${escapeHtml(server.url || "")}" placeholder="${escapeHtml(t("placeholders.mcpUrl"))}" />
+          <select data-mcp-auth-type="${index}">
+            <option value="none" ${authType === "none" ? "selected" : ""}>${escapeHtml(t("mcp.auth.none"))}</option>
+            <option value="bearer" ${authType === "bearer" ? "selected" : ""}>${escapeHtml(t("mcp.auth.bearer"))}</option>
+            <option value="oauth" ${authType === "oauth" ? "selected" : ""}>${escapeHtml(t("mcp.auth.oauth"))}</option>
+          </select>
+          <span class="mcp-auth-cell">
+            <input data-mcp-bearer-token="${index}" type="password" value="" placeholder="${escapeHtml(tokenPlaceholder)}" ${authType === "bearer" ? "" : "hidden"} />
+            <button class="action" type="button" data-mcp-oauth="${index}" ${authType === "oauth" ? "" : "hidden"}>${escapeHtml(server.oauth_connected ? t("actions.reconnectOAuth") : t("actions.connectOAuth"))}</button>
+          </span>
+          <input data-mcp-description="${index}" value="${escapeHtml(server.description || "")}" placeholder="${escapeHtml(t("placeholders.mcpDescription"))}" />
+          <span class="inline-action">
+            <button class="action" type="button" data-mcp-validate="${index}">${escapeHtml(t("actions.validateConnection"))}</button>
+            <button class="action danger" type="button" data-mcp-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
+          </span>
+        `;
+        mcpServerList.appendChild(row);
+      });
+    }
+
+    function updateMcpServerFromInput(target) {
+      const mappings = [
+        ["mcpEnabled", "enabled", (value) => Boolean(value)],
+        ["mcpName", "name", (value) => String(value || "")],
+        ["mcpUrl", "url", (value) => String(value || "")],
+        ["mcpAuthType", "auth_type", (value) => String(value || "none")],
+        ["mcpBearerToken", "bearer_token", (value) => String(value || "")],
+        ["mcpDescription", "description", (value) => String(value || "")],
+      ];
+      for (const [datasetKey, field, normalize] of mappings) {
+        const index = target.dataset[datasetKey];
+        if (index === undefined) continue;
+        const server = mcpServers[Number(index)];
+        if (!server) return;
+        server[field] = normalize(target.type === "checkbox" ? target.checked : target.value);
+        server.id = normalizeMcpId(server.id || server.name, `mcp_${Number(index) + 1}`);
+        if (field === "auth_type") {
+          if (server.auth_type !== "bearer") server.bearer_token = "";
+          renderMcpServers();
+        }
+        setText(mcpStatus, "status.mcpPending");
+        return;
+      }
+    }
+
+    async function validateExternalMcp(index) {
+      const server = mcpServers[index];
+      if (!server?.url?.trim()) {
+        setText(mcpStatus, "status.mcpUrlRequired");
+        return;
+      }
+      setText(mcpStatus, "status.mcpValidating");
+      const res = await fetch("/api/mcps/validate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          id: server.id,
+          name: server.name,
+          url: server.url.trim(),
+          auth_type: server.auth_type || "none",
+          bearer_token: server.bearer_token || "",
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setText(mcpStatus, "status.mcpValidationFailed", {error: data.error || t("status.unknownError")});
+        return;
+      }
+      server.tools = data.tools || [];
+      server.bearer_token_configured = server.auth_type === "bearer" ? Boolean(server.bearer_token_configured) : false;
+      server.oauth_connected = server.auth_type === "oauth" ? true : Boolean(server.oauth_connected);
+      if (server.auth_type === "oauth") renderMcpServers();
+      const names = (data.sample_tools || []).map((tool) => tool.name).join(", ");
+      setText(mcpStatus, "status.mcpValidationOk", {
+        count: data.tool_count,
+        names: names ? t("status.haSampleTools", {names}) : "",
+      });
+    }
+
+    async function connectExternalMcpOAuth(index) {
+      const server = mcpServers[index];
+      if (!server?.url?.trim()) {
+        setText(mcpStatus, "status.mcpUrlRequired");
+        return;
+      }
+      setText(mcpStatus, "status.mcpOAuthStarting");
+      const res = await fetch("/api/mcps/oauth/start", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id: server.id, name: server.name, url: server.url.trim()}),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setText(mcpStatus, "status.mcpOAuthFailed", {error: data.error || t("status.unknownError")});
+        return;
+      }
+      if (data.connected) {
+        server.oauth_connected = true;
+        server.tools = data.tools || [];
+        renderMcpServers();
+        setText(mcpStatus, "status.mcpOAuthConnected");
+        return;
+      }
+      if (data.auth_url) window.open(data.auth_url, "_blank", "noopener,noreferrer");
+      setText(mcpStatus, "status.mcpOAuthWaiting");
+      const started = Date.now();
+      const poll = async () => {
+        const statusRes = await fetch(`/api/mcps/oauth/status/${encodeURIComponent(data.flow_id)}`);
+        const status = await statusRes.json();
+        if (!status.ok) {
+          setText(mcpStatus, "status.mcpOAuthFailed", {error: status.error || t("status.unknownError")});
+          return;
+        }
+        if (status.connected) {
+          server.oauth_connected = true;
+          server.tools = status.tools || [];
+          renderMcpServers();
+          setText(mcpStatus, "status.mcpOAuthConnected");
+          return;
+        }
+        if (Date.now() - started < 300000) {
+          window.setTimeout(() => poll().catch((err) => {
+            setText(mcpStatus, "status.mcpOAuthFailed", {error: err.message});
+          }), 1500);
+        }
+      };
+      await poll();
+    }
+
+    function filteredDeviceIndexes() {
+      const filter = devicesFilter.value.trim().toLowerCase();
+      return devices
+        .map((device, index) => ({device, index}))
+        .filter(({device}) => {
+          const haystack = [
+            device.entity_id,
+            device.name,
+            device.domain,
+            ...(device.aliases || []),
+          ].join(" ").toLowerCase();
+          return !filter || haystack.includes(filter);
+        })
+        .map(({index}) => index);
+    }
+
+    function updateDevicesToggleLabel(visibleIndexes) {
+      if (!devicesToggleAll) return;
+      const indexes = visibleIndexes || filteredDeviceIndexes();
+      const allVisibleEnabled = indexes.length > 0 && indexes.every((index) => devices[index]?.enabled);
+      devicesToggleAll.textContent = t(allVisibleEnabled ? "actions.deselectAll" : "actions.selectAll");
+      devicesToggleAll.disabled = indexes.length === 0;
+    }
+
+    function renderDevices() {
+      const visibleIndexes = filteredDeviceIndexes();
+      const rows = visibleIndexes.map((index) => devices[index]);
+
+      setText(devicesSummary, "status.devicesSummary", {
+        total: devices.length,
+        enabled: devices.filter((device) => device.enabled).length,
+      });
+      updateDevicesToggleLabel(visibleIndexes);
+      devicesList.innerHTML = `
+        <div class="device-row device-head">
+          <div>${escapeHtml(t("devices.columns.use"))}</div>
+          <div>${escapeHtml(t("devices.columns.name"))}</div>
+          <div>${escapeHtml(t("devices.columns.domainEntity"))}</div>
+          <div>${escapeHtml(t("devices.columns.aliases"))}</div>
+          <div></div>
+        </div>
+      `;
+
+      rows.forEach((device, rowIndex) => {
+        const index = visibleIndexes[rowIndex];
+        const row = document.createElement("div");
+        row.className = "device-row";
+        row.innerHTML = `
+          <input data-device-enabled="${index}" type="checkbox" ${device.enabled ? "checked" : ""} title="${escapeHtml(t("devices.enableTitle"))}" />
+          <input data-device-name="${index}" value="${escapeHtml(device.name || "")}" />
+          <div class="device-domain" title="${escapeHtml(device.entity_id || "")}">${escapeHtml(device.domain || "")}<br>${escapeHtml(device.entity_id || "")}</div>
+          <input data-device-aliases="${index}" value="${escapeHtml(aliasesToText(device.aliases))}" placeholder="${escapeHtml(t("placeholders.deviceAliases"))}" />
+          <button class="action danger" type="button" data-device-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
+        `;
+        devicesList.appendChild(row);
+      });
+    }
+
+    function toggleVisibleDevices() {
+      const visibleIndexes = filteredDeviceIndexes();
+      if (!visibleIndexes.length) return;
+      const shouldEnable = visibleIndexes.some((index) => !devices[index]?.enabled);
+      visibleIndexes.forEach((index) => {
+        devices[index].enabled = shouldEnable;
+      });
+      devicesDirty = true;
+      renderDevices();
+      setText(devicesSummary, "status.devicesPending");
+      notify(shouldEnable ? "status.devicesSelected" : "status.devicesDeselected", "info");
+    }
+
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    async function loadDevices() {
+      const res = await fetch("/api/home-assistant/devices");
+      const data = await res.json();
+      devices = data.devices || [];
+      devicesDirty = false;
+      renderDevices();
+    }
+
+    async function saveDevices() {
+      devicesSave.disabled = true;
+      setText(devicesSummary, "status.devicesSaving");
+      try {
+        const res = await fetch("/api/home-assistant/devices", {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({devices}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        const data = await res.json();
+        devices = data.devices || [];
+        devicesDirty = false;
+        renderDevices();
+        setText(devicesSummary, "status.devicesSaved");
+        notify("status.devicesSaved");
+      } finally {
+        devicesSave.disabled = false;
+      }
+    }
+
+
+    async function refreshDevices() {
+      const url = haMcpUrl.value.trim();
+      devicesRefresh.disabled = true;
+      setText(devicesSummary, "status.devicesImporting");
+      try {
+        const res = await fetch("/api/home-assistant/devices/refresh", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({url}),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          setText(devicesSummary, "status.devicesImportFailed", {error: data.error || t("status.unknownError")});
+          notify("status.devicesImportFailed", "error", {error: data.error || t("status.unknownError")});
+          return;
+        }
+        devices = data.devices || [];
+        devicesDirty = false;
+        renderDevices();
+        notify("status.devicesImported", "success", {count: devices.length});
+      } finally {
+        devicesRefresh.disabled = false;
+      }
+    }
+
+
+    function renderPersonaLibrary(preferId) {
+      if (!personaLibrarySelect) return;
+      const personas = personaLibrary.personas || [];
+      const previous = preferId || personaLibrarySelect.value || personaLibrary.editing || personaLibrary.active || "";
+      const selected = personas.some((persona) => persona.id === previous)
+        ? previous
+        : personaLibrary.active || personas[0]?.id || "";
+      personaLibrarySelect.innerHTML = (personaLibrary.personas || [])
+        .map((persona) => {
+          const tags = [];
+          if (persona.id === personaLibrary.active) tags.push(t("persona.activeSuffix"));
+          if (persona.editing && persona.id !== personaLibrary.active) tags.push(t("persona.editingSuffix"));
+          const suffix = tags.length ? ` (${tags.join(", ")})` : "";
+          const label = `${persona.name || persona.id}${suffix}`;
+          return `<option value="${escapeHtml(persona.id)}">${escapeHtml(label)}</option>`;
+        })
+        .join("");
+      ensureSelectValue(personaLibrarySelect, selected || personaLibrary.active || personaLibrary.personas?.[0]?.id || "");
+      const current = personaLibrarySelect.value;
+      const selectedPersona = (personaLibrary.personas || []).find((persona) => persona.id === current);
+      if (personaNameInput) personaNameInput.value = selectedPersona?.name || "";
+      if (personaLibraryMeta) {
+        let metaText = selectedPersona
+          ? t("persona.libraryMeta", {
+            count: personaLibrary.personas?.length || 0,
+            sprites: selectedPersona.asset_count || 0,
+          })
+          : t("persona.libraryEmpty");
+        if (selectedPersona && !selectedPersona.has_idle) {
+          metaText += ` · ${t("persona.needsIdle")}`;
+        }
+        personaLibraryMeta.textContent = metaText;
+      }
+      personaSaveName.disabled = !current;
+      // Activate stays clickable for personas without an idle so the click
+      // can explain why activation is refused (warning toast).
+      personaActivate.disabled = !current || current === personaLibrary.active;
+      personaEdit.disabled = !current || current === personaLibrary.editing;
+      personaOptimize.disabled = !current;
+      personaExport.disabled = !current;
+      personaDelete.disabled = !current || current === "default" || selectedPersona?.can_delete === false;
+    }
+
+    function selectedPersonaId() {
+      return personaLibrarySelect.value || personaLibrary.active || "";
+    }
+
+    function openPersonaFilesModal() {
+      personaFilesModal.hidden = false;
+    }
+
+    function closePersonaFilesModal() {
+      personaFilesModal.hidden = true;
+      if (personaUpload) personaUpload.value = "";
+      if (personaImport) personaImport.value = "";
+    }
+
+    function openPersonaDeleteModal() {
+      const id = selectedPersonaId();
+      if (!id || id === "default") return;
+      const selectedPersona = (personaLibrary.personas || []).find((persona) => persona.id === id);
+      if (selectedPersona?.can_delete === false) return;
+      pendingPersonaDeleteId = id;
+      const name = selectedPersona?.name || id;
+      personaDeleteMessage.textContent = t("modal.personaDelete.body", {name});
+      personaDeleteModal.hidden = false;
+      personaDeleteCancel.focus();
+    }
+
+    function closePersonaDeleteModal() {
+      personaDeleteModal.hidden = true;
+      pendingPersonaDeleteId = "";
+      personaDeleteConfirm.disabled = false;
+    }
+
+    async function loadPersonaLibrary() {
+      const res = await fetch("/api/persona/library");
+      if (!res.ok) return;
+      personaLibrary = await res.json();
+      renderPersonaLibrary();
+    }
+
+    async function loadActivePersonaEditor() {
+      const [configRes, assetsRes] = await Promise.all([
+        fetch("/api/persona/config"),
+        fetch("/api/persona/assets"),
+      ]);
+      personaConfig = await configRes.json();
+      const assetsData = await assetsRes.json();
+      personaAssets = assetsData.assets || [];
+      personaEditingIndex = 0;
+      personaPreviewImageFile = "";
+      personaSheetSignature = "";
+      renderPersonaAnimations();
+      renderPersonaAssets();
+      renderThemeEditor();
+    }
+
+    async function activateSelectedPersona() {
+      const id = selectedPersonaId();
+      if (!id || id === personaLibrary.active) return;
+      const selectedPersona = (personaLibrary.personas || []).find((persona) => persona.id === id);
+      if (!selectedPersona?.has_idle) {
+        setStatus("status.personaNeedsIdle");
+        notify("status.personaNeedsIdle", "warning");
+        return;
+      }
+      personaActivate.disabled = true;
+      setStatus("status.personaActivating");
+      try {
+        const res = await fetch("/api/persona/activate", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        renderPersonaLibrary();
+        await loadActivePersonaEditor();
+        setStatus("status.personaActivated");
+        notify("status.personaActivated");
+      } finally {
+        renderPersonaLibrary();
+      }
+    }
+
+    async function editSelectedPersona() {
+      const id = selectedPersonaId();
+      if (!id || id === personaLibrary.editing) return;
+      personaEdit.disabled = true;
+      try {
+        const res = await fetch("/api/persona/edit", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        renderPersonaLibrary(id);
+        await loadActivePersonaEditor();
+        const name = (personaLibrary.personas || []).find((persona) => persona.id === id)?.name || id;
+        setStatus("status.personaEditing", {name});
+        notify("status.personaEditing", "success", {name});
+      } finally {
+        renderPersonaLibrary();
+      }
+    }
+
+    function openPersonaCreateModal() {
+      personaCreateName.value = "";
+      personaCreateModal.hidden = false;
+      personaCreateName.focus();
+    }
+
+    function closePersonaCreateModal() {
+      personaCreateModal.hidden = true;
+      personaCreateName.value = "";
+    }
+
+    async function optimizeSelectedPersona() {
+      const id = selectedPersonaId();
+      if (!id) return;
+      const isEditing = id === personaLibrary.editing;
+      personaOptimize.disabled = true;
+      setStatus("status.optimizingSprites");
+      try {
+        // Persist current edits first so the on-disk config we convert matches
+        // what the user sees, and so reloading the editor afterwards is clean.
+        if (isEditing && personaConfig) await savePersona();
+        const res = await fetch("/api/persona/optimize", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        const result = await res.json();
+        const beforeMb = (result.before_bytes / 1e6).toFixed(1);
+        const afterMb = (result.after_bytes / 1e6).toFixed(1);
+        await loadPersonaLibrary();
+        if (isEditing) await loadActivePersonaEditor();
+        if (result.sheet_count > 0) {
+          setStatus("status.spritesOptimized", {count: result.sheet_count, before: beforeMb, after: afterMb});
+          notify("status.spritesOptimized", "success", {count: result.sheet_count, before: beforeMb, after: afterMb});
+        } else {
+          setStatus("status.spritesAlreadyOptimized");
+          notify("status.spritesAlreadyOptimized", "info");
+        }
+      } finally {
+        renderPersonaLibrary();
+      }
+    }
+
+    async function createBlankPersona() {
+      const name = personaCreateName.value.trim();
+      if (!name) {
+        setStatus("status.personaNameRequired");
+        notify("status.personaNameRequired", "warning");
+        personaCreateName.focus();
+        return;
+      }
+      personaCreateConfirm.disabled = true;
+      setStatus("status.personaCreating");
+      try {
+        const res = await fetch("/api/persona", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({name}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        closePersonaCreateModal();
+        renderPersonaLibrary(personaLibrary.editing || personaLibrary.active || "");
+        await loadActivePersonaEditor();
+        setStatus("status.personaCreated");
+        notify("status.personaCreated");
+      } finally {
+        personaCreateConfirm.disabled = false;
+        renderPersonaLibrary();
+      }
+    }
+
+    async function saveSelectedPersonaName() {
+      const id = selectedPersonaId();
+      const name = personaNameInput.value.trim();
+      if (!id || !name) {
+        setStatus("status.personaNameRequired");
+        notify("status.personaNameRequired", "warning");
+        return;
+      }
+      personaSaveName.disabled = true;
+      setStatus("status.personaSavingName");
+      try {
+        const res = await fetch(`/api/persona/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({name}),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        personaLibrarySelect.value = id;
+        renderPersonaLibrary();
+        setStatus("status.personaNameSaved");
+        notify("status.personaNameSaved");
+      } finally {
+        renderPersonaLibrary();
+      }
+    }
+
+    function exportSelectedPersona() {
+      const id = selectedPersonaId();
+      if (!id) return;
+      window.location.href = `/api/persona/export?persona_id=${encodeURIComponent(id)}`;
+    }
+
+    function deleteSelectedPersona() {
+      openPersonaDeleteModal();
+    }
+
+    async function confirmPersonaDelete() {
+      const id = pendingPersonaDeleteId;
+      if (!id || id === "default") return;
+      personaDeleteConfirm.disabled = true;
+      personaDelete.disabled = true;
+      setStatus("status.personaDeleting");
+      try {
+        const res = await fetch(`/api/persona/${encodeURIComponent(id)}`, {method: "DELETE"});
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        personaLibrarySelect.value = personaLibrary.active || "";
+        renderPersonaLibrary();
+        await loadActivePersonaEditor();
+        setStatus("status.personaDeleted");
+        notify("status.personaDeleted");
+        closePersonaDeleteModal();
+      } finally {
+        personaDeleteConfirm.disabled = false;
+        renderPersonaLibrary();
+      }
+    }
+
+    async function importPersonaPackage() {
+      const file = personaImport.files?.[0];
+      if (!file) {
+        setStatus("status.personaImportSelectRequired");
+        notify("status.personaImportSelectRequired", "warning");
+        return;
+      }
+      const payload = new FormData();
+      payload.append("file", file);
+      personaImportBtn.disabled = true;
+      setStatus("status.personaImporting");
+      try {
+        const res = await fetch("/api/persona/import", {method: "POST", body: payload});
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.detail || res.statusText);
+        }
+        personaLibrary = await res.json();
+        personaImport.value = "";
+        renderPersonaLibrary();
+        closePersonaFilesModal();
+        setStatus("status.personaImported");
+        notify("status.personaImported");
+      } finally {
+        personaImportBtn.disabled = false;
+      }
+    }
+
+
+    function personaSpriteAssets() {
+      return personaAssets.filter((asset) => asset.type === "sprite" || /\.(png|jpg|jpeg|webp)$/i.test(asset.name));
+    }
+
+    function personaAssetUrl(file) {
+      return `/persona/assets/${encodeURIComponent(file)}`;
+    }
+
+    function renderPersonaAssets() {
+      if (!personaAssetList) return;
+      const sprites = personaSpriteAssets();
+      const usedFiles = new Set((personaConfig?.animations || []).map((a) => a.file).filter(Boolean));
+      personaAssetList.innerHTML = "";
+      if (!sprites.length) {
+        const empty = document.createElement("div");
+        empty.className = "persona-asset-empty";
+        empty.textContent = t("persona.assetsEmpty");
+        personaAssetList.appendChild(empty);
+        return;
+      }
+      for (const asset of sprites) {
+        const row = document.createElement("div");
+        row.className = "persona-asset-row";
+
+        const thumb = document.createElement("img");
+        thumb.className = "persona-asset-thumb";
+        thumb.src = personaAssetUrl(asset.name);
+        thumb.alt = asset.name;
+        thumb.loading = "lazy";
+
+        const name = document.createElement("div");
+        name.className = "persona-asset-name";
+        const label = document.createElement("span");
+        label.className = "label";
+        label.textContent = asset.name;
+        name.appendChild(label);
+        if (usedFiles.has(asset.name)) {
+          const badge = document.createElement("span");
+          badge.className = "persona-asset-badge";
+          badge.textContent = t("persona.assetInUse");
+          name.appendChild(badge);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "persona-asset-actions";
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "action";
+        renameBtn.type = "button";
+        renameBtn.textContent = t("actions.rename");
+        renameBtn.dataset.assetRename = asset.name;
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "action danger";
+        deleteBtn.type = "button";
+        deleteBtn.textContent = t("actions.delete");
+        deleteBtn.dataset.assetDelete = asset.name;
+        actions.append(renameBtn, deleteBtn);
+
+        row.append(thumb, name, actions);
+        personaAssetList.appendChild(row);
+      }
+    }
+
+    async function deletePersonaAssetFlow(name) {
+      const res = await fetch("/api/persona/assets/delete", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+      });
+      if (!res.ok) {
+        if (res.status === 409) {
+          setStatus("status.assetInUse", {name});
+          notify("status.assetInUse", "warning", {name});
+        } else {
+          const error = await res.json().catch(() => ({}));
+          notify("status.genericError", "error", {error: error.detail || res.statusText});
+        }
+        return;
+      }
+      await loadActivePersonaEditor();
+      await loadPersonaLibrary();
+      setStatus("status.assetDeleted", {name});
+      notify("status.assetDeleted", "success", {name});
+    }
+
+    async function renamePersonaAssetFlow(name) {
+      const proposed = window.prompt(t("persona.renamePrompt"), name);
+      if (proposed === null) return;
+      const newName = proposed.trim();
+      if (!newName || newName === name) return;
+      const res = await fetch("/api/persona/assets/rename", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, new_name: newName}),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        notify("status.genericError", "error", {error: error.detail || res.statusText});
+        return;
+      }
+      const result = await res.json();
+      await loadActivePersonaEditor();
+      await loadPersonaLibrary();
+      setStatus("status.assetRenamed", {from: name, to: result.to});
+      notify("status.assetRenamed", "success", {from: name, to: result.to});
+    }
+
+    function currentPersonaAnimation() {
+      if (!personaConfig?.animations?.length) return null;
+      personaEditingIndex = Math.max(0, Math.min(personaEditingIndex, personaConfig.animations.length - 1));
+      return personaConfig.animations[personaEditingIndex];
+    }
+
+    function renderPersonaAnimations() {
+      if (!personaConfig) return;
+      personaList.innerHTML = `
+        <div class="persona-row persona-head">
+          <div>${escapeHtml(t("persona.columns.name"))}</div>
+          <div>${escapeHtml(t("persona.columns.type"))}</div>
+          <div>${escapeHtml(t("persona.columns.fps"))}</div>
+          <div></div>
+        </div>
+      `;
+      // Display the rows alphabetically (natural order: idle_2 before idle_10)
+      // while keeping each row tied to its original array index, so selection,
+      // editing and the saved config order are unaffected.
+      (personaConfig.animations || [])
+        .map((animation, index) => ({animation, index}))
+        .sort((a, b) => (a.animation.name || "").localeCompare(b.animation.name || "", undefined, {sensitivity: "base", numeric: true}))
+        .forEach(({animation, index}) => {
+          const row = document.createElement("div");
+          row.className = "persona-row";
+          row.dataset.personaRow = String(index);
+          if (index === personaEditingIndex) row.classList.add("active");
+          const kindLabel = t(`persona.type.${animation.kind || "idle"}`);
+          row.innerHTML = `
+            <div><strong>${escapeHtml(animation.name || t("persona.untitled"))}</strong><br><span class="hint">${escapeHtml(animation.file || t("persona.noFile"))}</span></div>
+            <div class="device-domain">${escapeHtml(kindLabel)}</div>
+            <div class="device-domain">${Number(animation.fps || 24)}</div>
+            <button class="action danger" type="button" data-persona-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
+          `;
+          personaList.appendChild(row);
+        });
+      renderPersonaEditor();
+    }
+
+
+    function renderPersonaEditor() {
+      const animation = currentPersonaAnimation();
+      const sprites = personaSpriteAssets();
+      personaEditFile.innerHTML = sprites
+        .map((asset) => `<option value="${escapeHtml(asset.name)}">${escapeHtml(asset.name)}</option>`)
+        .join("");
+      const disabled = !animation;
+      [personaEditName, personaEditKind, personaEditFile, personaEditFrameSize, personaEditColumns, personaEditRows, personaEditUsedFrames, personaEditFps, personaEditIdleAfter].forEach((input) => {
+        input.disabled = disabled;
+      });
+      if (!animation) {
+        personaSheetCanvas.getContext("2d").clearRect(0, 0, personaSheetCanvas.width, personaSheetCanvas.height);
+        personaPreviewCanvas.getContext("2d").clearRect(0, 0, personaPreviewCanvas.width, personaPreviewCanvas.height);
+        return;
+      }
+      personaEditName.value = animation.name || "";
+      personaEditKind.value = animation.kind || "idle";
+      personaEditFile.value = animation.file || sprites[0]?.name || "";
+      personaEditFrameSize.value = Number(animation.frame_size || 512);
+      personaEditColumns.value = Number(animation.columns || 1);
+      personaEditRows.value = Number(animation.rows || 1);
+      personaEditUsedFrames.value = Number(animation.used_frames || 1);
+      personaEditFps.value = Number(animation.fps || 24);
+      personaEditIdleAfter.value = Number(animation.idle_after || 0);
+      updatePersonaIdleVisibility();
+      restartPersonaPreview();
+    }
+
+    function writePersonaEditor() {
+      const animation = currentPersonaAnimation();
+      if (!animation) return;
+      animation.name = personaEditName.value.trim() || "new_animation";
+      animation.kind = personaEditKind.value || "idle";
+      animation.file = personaEditFile.value || "";
+      animation.frame_size = Number(personaEditFrameSize.value || 512);
+      animation.columns = Number(personaEditColumns.value || 1);
+      animation.rows = Number(personaEditRows.value || 1);
+      animation.used_frames = Number(personaEditUsedFrames.value || 1);
+      animation.fps = Number(personaEditFps.value || 24);
+      animation.idle_after = Math.max(0, Number(personaEditIdleAfter.value || 0));
+    }
+
+    function updatePersonaIdleVisibility() {
+      if (!personaEditIdleAfterField) return;
+      const isIdle = (personaEditKind.value || "idle") === "idle";
+      personaEditIdleAfterField.classList.toggle("is-hidden", !isIdle);
+    }
+
+
+    function restartPersonaPreview() {
+      if (personaPreviewTimer) clearInterval(personaPreviewTimer);
+      personaPreviewTimer = 0;
+      personaPreviewFrame = 0;
+      drawPersonaSheetPreview();
+      drawPersonaPreviewFrame();
+      const animation = currentPersonaAnimation();
+      if (!animation) return;
+      const fps = Math.max(1, Number(animation.fps || 24));
+      personaPreviewTimer = setInterval(drawPersonaPreviewFrame, Math.max(16, Math.floor(1000 / fps)));
+    }
+
+    function fitCanvasToElement(canvas) {
+      const parent = canvas.parentElement;
+      const width = Math.max(1, Math.floor(parent?.clientWidth || canvas.clientWidth || canvas.width));
+      const height = Math.max(1, Math.floor(parent?.clientHeight || canvas.clientHeight || canvas.height));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        personaSheetSignature = "";
+        return true;
+      }
+      return false;
+    }
+
+    function drawPersonaSheetPreview() {
+      fitCanvasToElement(personaSheetCanvas);
+      const ctx = personaSheetCanvas.getContext("2d");
+      const animation = currentPersonaAnimation();
+      if (!animation?.file || !personaPreviewImage.complete || personaPreviewImage.naturalWidth === 0) {
+        ctx.clearRect(0, 0, personaSheetCanvas.width, personaSheetCanvas.height);
+        personaSheetSignature = "";
+        return;
+      }
+      const frameSize = Math.max(1, Number(animation.frame_size || 512));
+      const columns = Math.max(1, Number(animation.columns || 1));
+      const rows = Math.max(1, Number(animation.rows || 1));
+      const maxFrames = columns * rows;
+      const usedFrames = Math.max(1, Math.min(Number(animation.used_frames || maxFrames), maxFrames));
+      const signature = `${animation.file}|${frameSize}|${columns}|${rows}|${usedFrames}|${personaPreviewImage.naturalWidth}x${personaPreviewImage.naturalHeight}|${personaSheetCanvas.width}x${personaSheetCanvas.height}`;
+      if (signature === personaSheetSignature) return;
+      personaSheetSignature = signature;
+      ctx.clearRect(0, 0, personaSheetCanvas.width, personaSheetCanvas.height);
+      const sheetWidth = frameSize * columns;
+      const sheetHeight = frameSize * rows;
+      const scale = Math.min(personaSheetCanvas.width / sheetWidth, personaSheetCanvas.height / sheetHeight);
+      const drawWidth = sheetWidth * scale;
+      const drawHeight = sheetHeight * scale;
+      const dx = (personaSheetCanvas.width - drawWidth) / 2;
+      const dy = (personaSheetCanvas.height - drawHeight) / 2;
+      const sourceWidth = Math.min(sheetWidth, personaPreviewImage.naturalWidth);
+      const sourceHeight = Math.min(sheetHeight, personaPreviewImage.naturalHeight);
+
+      ctx.drawImage(personaPreviewImage, 0, 0, sourceWidth, sourceHeight, dx, dy, sourceWidth * scale, sourceHeight * scale);
+      for (let index = 0; index < maxFrames; index += 1) {
+        const col = index % columns;
+        const row = Math.floor(index / columns);
+        const x = dx + col * frameSize * scale;
+        const y = dy + row * frameSize * scale;
+        const width = frameSize * scale;
+        const height = frameSize * scale;
+        if (index < usedFrames) {
+          ctx.fillStyle = "rgba(34, 197, 94, 0.24)";
+          ctx.fillRect(x, y, width, height);
+        }
+        ctx.strokeStyle = index < usedFrames ? "rgba(74, 222, 128, 0.9)" : "rgba(148, 163, 184, 0.55)";
+        ctx.lineWidth = index < usedFrames ? 2 : 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, Math.max(1, width - 1), Math.max(1, height - 1));
+      }
+    }
+
+    function drawPersonaPreviewFrame() {
+      fitCanvasToElement(personaPreviewCanvas);
+      const animation = currentPersonaAnimation();
+      if (!animation?.file) {
+        personaPreviewCanvas.getContext("2d").clearRect(0, 0, personaPreviewCanvas.width, personaPreviewCanvas.height);
+        return;
+      }
+      const frameSize = Math.max(1, Number(animation.frame_size || 512));
+      const columns = Math.max(1, Number(animation.columns || 1));
+      const rows = Math.max(1, Number(animation.rows || 1));
+      const maxFrames = columns * rows;
+      const usedFrames = Math.max(1, Math.min(Number(animation.used_frames || maxFrames), maxFrames));
+      const frame = personaPreviewFrame % usedFrames;
+      const col = frame % columns;
+      const row = Math.floor(frame / columns);
+      if (personaPreviewImageFile !== animation.file) {
+        personaPreviewImageFile = animation.file;
+        personaSheetSignature = "";
+        personaPreviewImage = new Image();
+        personaPreviewImage.onload = () => {
+          drawPersonaSheetPreview();
+          drawPersonaPreviewFrame();
+        };
+        personaPreviewImage.src = personaAssetUrl(animation.file);
+        return;
+      }
+      if (!personaPreviewImage.complete || personaPreviewImage.naturalWidth === 0) return;
+      drawPersonaSheetPreview();
+      const ctx = personaPreviewCanvas.getContext("2d");
+      ctx.clearRect(0, 0, personaPreviewCanvas.width, personaPreviewCanvas.height);
+      const scale = Math.min(personaPreviewCanvas.width / frameSize, personaPreviewCanvas.height / frameSize);
+      const size = Math.max(1, Math.floor(frameSize * scale));
+      const dx = Math.floor((personaPreviewCanvas.width - size) / 2);
+      const dy = Math.floor((personaPreviewCanvas.height - size) / 2);
+      ctx.drawImage(
+        personaPreviewImage,
+        col * frameSize,
+        row * frameSize,
+        frameSize,
+        frameSize,
+        dx,
+        dy,
+        size,
+        size,
+      );
+      personaPreviewFrame = (personaPreviewFrame + 1) % usedFrames;
+    }
+
+    const themePresetsEl = document.querySelector("#theme-presets");
+    const themeFontSelect = document.querySelector("#theme-font-select");
+    const themePreviewBubble = document.querySelector("#theme-preview-bubble");
+    const themePreviewName = document.querySelector("#theme-preview-name");
+    const themePreviewText = document.querySelector("#theme-preview-text");
+    const themePreviewField = document.querySelector("#theme-preview-field");
+    const themePreviewPlaceholder = document.querySelector("#theme-preview-placeholder");
+    const themePreviewMic = document.querySelector("#theme-preview-mic");
+    const themeLibraryEl = document.querySelector("#theme-library");
+    const themeLibraryEmpty = document.querySelector("#theme-library-empty");
+    const themeNameInput = document.querySelector("#theme-name-input");
+    const themeSaveLibrary = document.querySelector("#theme-save-library");
+    const themeInputs = document.querySelectorAll("[data-theme-path]");
+    const loadedPreviewFonts = new Map();
+    let themeConfig = null;
+    let themeLibrary = {themes: []};
+
+    // Mirrors DEFAULT_THEME in theme_config.py.
+    const THEME_DEFAULTS = {
+      preset: "classic",
+      font_file: "",
+      subtitle: {
+        font_size: 18, text_color: "#ffffff",
+        bg_color: "#000000", bg_color2: "#000000", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 62,
+        border_radius: 18, border_color: "#000000", border_width: 0,
+        name_tag: false, name_color: "#fbbf24", highlight_color: "#ff5757",
+      },
+      input: {
+        text_color: "#ffffff",
+        bg_color: "#2e2e2e", bg_color2: "#2e2e2e", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 45,
+        border_radius: 14, border_color: "#3d4f69", border_width: 1, focus_border_color: "#7399ff",
+        mic_color: "#2563eb",
+      },
+    };
+
+    const THEME_PRESETS = {
+      classic: {
+        subtitle: {...THEME_DEFAULTS.subtitle},
+        input: {...THEME_DEFAULTS.input},
+      },
+      glass: {
+        subtitle: {
+          font_size: 18, text_color: "#eaf2fb",
+          bg_color: "#152238", bg_color2: "#0a1322", bg_gradient: true, gradient_direction: "diagonal", bg_opacity: 80,
+          border_radius: 16, border_color: "#4a6f9e", border_width: 1,
+          name_tag: true, name_color: "#6ec4ff", highlight_color: "#ffd166",
+        },
+        input: {
+          text_color: "#eaf2fb",
+          bg_color: "#0e1830", bg_color2: "#0a1222", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 82,
+          border_radius: 14, border_color: "#33506e", border_width: 1, focus_border_color: "#6ea8ff",
+          mic_color: "#2563eb",
+        },
+      },
+      midnight: {
+        subtitle: {
+          font_size: 18, text_color: "#f1f3f7",
+          bg_color: "#0b0c10", bg_color2: "#0b0c10", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 90,
+          border_radius: 18, border_color: "#23252d", border_width: 1,
+          name_tag: true, name_color: "#4d9fff", highlight_color: "#ff5757",
+        },
+        input: {
+          text_color: "#f1f3f7",
+          bg_color: "#13151d", bg_color2: "#13151d", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 92,
+          border_radius: 22, border_color: "#1f2230", border_width: 1, focus_border_color: "#3b82f6",
+          mic_color: "#2f6bff",
+        },
+      },
+      kawaii: {
+        subtitle: {
+          font_size: 18, text_color: "#7a5236",
+          bg_color: "#fff7e8", bg_color2: "#ffe8cf", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 97,
+          border_radius: 24, border_color: "#f3d9ae", border_width: 3,
+          name_tag: true, name_color: "#e8853c", highlight_color: "#e85d9c",
+        },
+        input: {
+          text_color: "#9b7a5d",
+          bg_color: "#fffaf0", bg_color2: "#fdeedd", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 97,
+          border_radius: 25, border_color: "#f0dcc0", border_width: 2, focus_border_color: "#d9b8f5",
+          mic_color: "#b39ddb",
+        },
+      },
+    };
+
+    function hexToRgb(hex) {
+      let text = String(hex || "").trim().replace(/^#/, "");
+      if (text.length === 3) text = text.split("").map((ch) => ch + ch).join("");
+      const value = Number.parseInt(text, 16);
+      if (!Number.isFinite(value) || text.length !== 6) return [0, 0, 0];
+      return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    }
+
+    function rgbaCss(hex, opacityPct) {
+      const [r, g, b] = hexToRgb(hex);
+      return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, opacityPct / 100)).toFixed(3)})`;
+    }
+
+    function mergedTheme() {
+      const theme = themeConfig || {};
+      return {
+        ...THEME_DEFAULTS,
+        ...theme,
+        subtitle: {...THEME_DEFAULTS.subtitle, ...(theme.subtitle || {})},
+        input: {...THEME_DEFAULTS.input, ...(theme.input || {})},
+      };
+    }
+
+    function themeBackgroundCss(section) {
+      const color1 = rgbaCss(section.bg_color, section.bg_opacity);
+      if (!section.bg_gradient) return color1;
+      const color2 = rgbaCss(section.bg_color2 || section.bg_color, section.bg_opacity);
+      const angle = {horizontal: "90deg", diagonal: "135deg"}[section.gradient_direction] || "180deg";
+      return `linear-gradient(${angle}, ${color1}, ${color2})`;
+    }
+
+    function markThemeCustom() {
+      if (!themeConfig) return;
+      themeConfig.preset = "custom";
+      renderThemePresets();
+    }
+
+    function renderThemePresets() {
+      if (!themePresetsEl) return;
+      const active = themeConfig?.preset || "classic";
+      themePresetsEl.innerHTML = "";
+      for (const [id, preset] of Object.entries(THEME_PRESETS)) {
+        const sub = preset.subtitle;
+        const inp = preset.input;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "theme-preset-card" + (active === id ? " active" : "");
+        const bubbleBorder = sub.border_width > 0 ? `1px solid ${sub.border_color}` : "none";
+        card.innerHTML = `
+          <span class="theme-preset-art">
+            <span class="theme-preset-bubble" style="background:${themeBackgroundCss(sub)}; border:${bubbleBorder}; border-radius:${Math.min(sub.border_radius, 11)}px"></span>
+            <span class="theme-preset-input" style="background:${themeBackgroundCss(inp)}; border-radius:${Math.min(inp.border_radius, 6)}px 0 0 ${Math.min(inp.border_radius, 6)}px"></span>
+            <span class="theme-preset-mic" style="background:${inp.mic_color}; border-radius:0 ${Math.min(inp.border_radius, 6)}px ${Math.min(inp.border_radius, 6)}px 0"></span>
+          </span>
+          <span class="theme-preset-name" data-i18n="themes.preset.${id}"></span>`;
+        card.querySelector(".theme-preset-name").textContent = t(`themes.preset.${id}`);
+        card.addEventListener("click", () => applyThemePreset(id));
+        themePresetsEl.appendChild(card);
+      }
+    }
+
+    function applyThemePreset(id) {
+      const preset = THEME_PRESETS[id];
+      if (!themeConfig || !preset) return;
+      themeConfig = {
+        ...mergedTheme(),
+        preset: id,
+        subtitle: {...preset.subtitle},
+        input: {...preset.input},
+      };
+      renderThemeEditor();
+      setStatus("status.themePending");
+    }
+
+    function renderThemeLibrary() {
+      if (!themeLibraryEl) return;
+      const themes = themeLibrary.themes || [];
+      themeLibraryEl.innerHTML = "";
+      themeLibraryEl.hidden = !themes.length;
+      if (themeLibraryEmpty) themeLibraryEmpty.hidden = Boolean(themes.length);
+      for (const item of themes) {
+        const sub = {...THEME_DEFAULTS.subtitle, ...(item.theme?.subtitle || {})};
+        const inp = {...THEME_DEFAULTS.input, ...(item.theme?.input || {})};
+        const card = document.createElement("div");
+        card.className = "theme-preset-card" + (themeConfig?.preset === `saved:${item.id}` ? " active" : "");
+        const bubbleBorder = sub.border_width > 0 ? `1px solid ${sub.border_color}` : "none";
+        card.innerHTML = `
+          <button type="button" class="theme-preset-del" title="${t("actions.delete")}">&times;</button>
+          <span class="theme-preset-art">
+            <span class="theme-preset-bubble" style="background:${themeBackgroundCss(sub)}; border:${bubbleBorder}; border-radius:${Math.min(sub.border_radius, 11)}px"></span>
+            <span class="theme-preset-input" style="background:${themeBackgroundCss(inp)}; border-radius:${Math.min(inp.border_radius, 6)}px 0 0 ${Math.min(inp.border_radius, 6)}px"></span>
+            <span class="theme-preset-mic" style="background:${inp.mic_color}; border-radius:0 ${Math.min(inp.border_radius, 6)}px ${Math.min(inp.border_radius, 6)}px 0"></span>
+          </span>
+          <span class="theme-preset-name"></span>`;
+        card.querySelector(".theme-preset-name").textContent = item.name;
+        card.addEventListener("click", () => {
+          themeConfig = {...mergedTheme(), ...structuredClone(item.theme), preset: `saved:${item.id}`};
+          renderThemeEditor();
+          setStatus("status.themePending");
+        });
+        card.querySelector(".theme-preset-del").addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const res = await fetch("/api/theme/library/delete", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({id: item.id}),
+          });
+          if (res.ok) {
+            themeLibrary = await res.json();
+            renderThemeLibrary();
+            setStatus("status.themeDeleted");
+            notify("status.themeDeleted", "info");
+          }
+        });
+        themeLibraryEl.appendChild(card);
+      }
+    }
+
+    async function saveThemeToLibrary() {
+      const name = (themeNameInput?.value || "").trim();
+      if (!name) {
+        setStatus("status.themeNameRequired");
+        notify("status.themeNameRequired", "warning");
+        themeNameInput?.focus();
+        return;
+      }
+      const res = await fetch("/api/theme/library", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, theme: mergedTheme()}),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || res.statusText);
+      }
+      themeLibrary = await res.json();
+      const saved = (themeLibrary.themes || []).find((item) => item.name === name);
+      if (saved && themeConfig) themeConfig.preset = `saved:${saved.id}`;
+      themeNameInput.value = "";
+      renderThemeEditor();
+      setStatus("status.themeSaved", {name});
+      notify("status.themeSaved", "success", {name});
+    }
+
+    function renderThemeFontOptions(selected) {
+      if (!themeFontSelect) return;
+      themeFontSelect.innerHTML = "";
+      const fallback = document.createElement("option");
+      fallback.value = "";
+      fallback.dataset.i18n = "themes.defaultFont";
+      fallback.textContent = t("themes.defaultFont");
+      themeFontSelect.appendChild(fallback);
+      // DynaPuff.ttf is the bundled default — it is already the "Default" option,
+      // so don't list it a second time as an uploaded font.
+      for (const asset of personaAssets.filter((item) => item.type === "font" && item.name !== "DynaPuff.ttf")) {
+        const option = document.createElement("option");
+        option.value = asset.name;
+        option.textContent = asset.name;
+        themeFontSelect.appendChild(option);
+      }
+      themeFontSelect.value = selected;
+      if (themeFontSelect.value !== selected) themeFontSelect.value = "";
+    }
+
+    function renderThemeEditor() {
+      if (!themeConfig || !themePresetsEl) return;
+      themeConfig = mergedTheme();
+      renderThemePresets();
+      renderThemeLibrary();
+      renderThemeFontOptions(themeConfig.font_file || "");
+      themeInputs.forEach((input) => {
+        const value = getPath(themeConfig, input.dataset.themePath);
+        if (input.type === "checkbox") input.checked = Boolean(value);
+        else input.value = String(value);
+        const readout = document.querySelector(`[data-theme-readout="${input.dataset.themePath}"]`);
+        if (readout) readout.textContent = String(value);
+      });
+      updateThemePreview();
+    }
+
+    async function ensurePreviewFont(file) {
+      const name = file || "DynaPuff.ttf";
+      if (loadedPreviewFonts.has(name)) return loadedPreviewFonts.get(name);
+      const family = `persona-font-${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      try {
+        const face = new FontFace(family, `url("/persona/fonts/${encodeURIComponent(name)}")`);
+        await face.load();
+        document.fonts.add(face);
+        loadedPreviewFonts.set(name, family);
+        return family;
+      } catch {
+        return "";
+      }
+    }
+
+    async function updateThemePreview() {
+      if (!themeConfig || !themePreviewBubble) return;
+      const theme = mergedTheme();
+      const family = await ensurePreviewFont(theme.font_file);
+      const sub = theme.subtitle;
+      themePreviewBubble.style.background = themeBackgroundCss(sub);
+      themePreviewBubble.style.border = sub.border_width > 0 ? `${sub.border_width}px solid ${sub.border_color}` : "none";
+      themePreviewBubble.style.borderRadius = `${sub.border_radius}px`;
+      themePreviewBubble.style.color = sub.text_color;
+      themePreviewBubble.style.fontSize = `${sub.font_size || 18}px`;
+      themePreviewBubble.style.fontFamily = family ? `'${family}', sans-serif` : "sans-serif";
+      // Demonstrate the karaoke highlight colour on one word of the sample text.
+      if (themePreviewText) {
+        const words = t("themes.previewBubble").split(" ");
+        const hi = Math.min(2, words.length - 1);
+        const safe = words.map((w) => w.replace(/[&<>]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c])));
+        safe[hi] = `<span style="color:${sub.highlight_color || "#ff5757"}; font-weight:900">${safe[hi]}</span>`;
+        themePreviewText.innerHTML = safe.join(" ");
+      }
+      const characterName = (document.querySelector('[name="character.name"]')?.value || "BitMon").trim();
+      themePreviewName.hidden = !sub.name_tag || !characterName;
+      themePreviewName.textContent = characterName.toUpperCase();
+      themePreviewName.style.color = sub.name_color;
+      themePreviewName.style.fontSize = `${Math.max(11, (sub.font_size || 18) - 5)}px`;
+      const inp = theme.input;
+      themePreviewField.style.background = themeBackgroundCss(inp);
+      themePreviewField.style.border = `${Math.max(0, inp.border_width)}px solid ${rgbaCss(inp.border_color, 80)}`;
+      themePreviewField.style.borderRadius = `${inp.border_radius}px`;
+      themePreviewPlaceholder.style.color = rgbaCss(inp.text_color, 55);
+      themePreviewMic.style.background = inp.mic_color;
+      themePreviewMic.style.borderRadius = `0 ${inp.border_radius}px ${inp.border_radius}px 0`;
+    }
+
+    async function loadTheme() {
+      const [configRes, libraryRes] = await Promise.all([
+        fetch("/api/theme/config"),
+        fetch("/api/theme/library"),
+      ]);
+      if (libraryRes.ok) themeLibrary = await libraryRes.json();
+      if (configRes.ok) themeConfig = await configRes.json();
+      renderThemeEditor();
+    }
+
+    async function saveTheme() {
+      if (!themeConfig) return;
+      const res = await fetch("/api/theme/config", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(mergedTheme()),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || res.statusText);
+      }
+      themeConfig = await res.json();
+      renderThemeEditor();
+    }
+
+    themeInputs.forEach((input) => {
+      input.addEventListener("input", () => {
+        if (!themeConfig) return;
+        const value = input.type === "checkbox" ? input.checked
+          : (input.type === "color" || input.tagName === "SELECT") ? input.value
+          : Number(input.value);
+        setPath(themeConfig, input.dataset.themePath, value);
+        const readout = document.querySelector(`[data-theme-readout="${input.dataset.themePath}"]`);
+        if (readout) readout.textContent = String(value);
+        markThemeCustom();
+        updateThemePreview();
+        setStatus("status.themePending");
+      });
+    });
+
+    themeFontSelect?.addEventListener("change", () => {
+      if (!themeConfig) return;
+      themeConfig.font_file = themeFontSelect.value;
+      updateThemePreview();
+      setStatus("status.themePending");
+    });
+
+    document.querySelector('[name="character.name"]')?.addEventListener("input", () => {
+      if (themeConfig) updateThemePreview();
+    });
+
+    themeSaveLibrary?.addEventListener("click", () => saveThemeToLibrary().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+    }));
+
+    async function loadPersona() {
+      await Promise.all([
+        loadPersonaLibrary(),
+        loadActivePersonaEditor(),
+      ]);
+    }
+
+    function readPersonaLayout() {
+      if (!personaConfig) return;
+      writePersonaEditor();
+    }
+
+    async function savePersona() {
+      if (!personaConfig) return;
+      readPersonaLayout();
+      const res = await fetch("/api/persona/config", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(personaConfig),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || res.statusText);
+      }
+      await loadPersonaLibrary();
+    }
+
+    async function uploadPersonaAsset() {
+      const file = personaUpload.files?.[0];
+      if (!file) {
+        setStatus("status.assetSelectRequired");
+        notify("status.assetSelectRequired", "warning");
+        return;
+      }
+      const payload = new FormData();
+      payload.append("file", file);
+      setStatus("status.assetUploading");
+      const res = await fetch("/api/persona/assets", {method: "POST", body: payload});
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || res.statusText);
+      }
+      const asset = await res.json();
+      personaAssets = personaAssets.filter((item) => item.name !== asset.name || item.type !== asset.type);
+      personaAssets.push(asset);
+      personaAssets.sort((a, b) => a.name.localeCompare(b.name));
+      renderPersonaAnimations();
+      renderPersonaAssets();
+      await loadPersonaLibrary();
+      personaUpload.value = "";
+      setStatus("status.assetUploaded", {name: asset.name});
+      notify("status.assetUploaded", "success", {name: asset.name});
+    }
+
+
+    function fillForm(config) {
+      for (const input of form.elements) {
+        if (!input.name) continue;
+        const value = getPath(config, input.name);
+        if (input.tagName === "SELECT") ensureSelectValue(input, value);
+        if (input.type === "checkbox") input.checked = Boolean(value);
+        else if (input.type === "password") input.value = "";
+        else input.value = value ?? "";
+      }
+      mcpServers = Array.isArray(getPath(config, "mcps.servers")) ? getPath(config, "mcps.servers").map((server) => ({...server})) : [];
+      renderMcpServers();
+      whisperHotkeyInput.value = hotkeyListToText(getPath(config, "microphone.whisper_hotkeys") || getPath(config, "microphone.whisper_hotkey") || "f8");
+      renderWakeWordModels(getPath(config, "wake_word.selected_model") || "builtin:hey_jarvis");
+      ensureSelectValue(llmProviderSelect, getPath(config, "llm.provider") || getPath(config, "provider") || "inworld");
+      voiceResponseToggle.checked = Boolean(getPath(config, "tts.enabled") ?? getPath(config, "inworld.voice_response") ?? getPath(config, "local.voice_response") ?? true);
+      ensureSelectValue(ttsProviderSelect, getPath(config, "tts.provider") || (getPath(config, "provider") === "local" ? "kokoro" : "inworld"));
+      renderKokoroLanguages(getPath(config, "local.kokoro_lang") || "");
+      renderKokoroVoiceOptions(getPath(config, "local.kokoro_voice") || "pf_dora");
+      ensureSelectValue(lmstudioModelSelect, getPath(config, "local.model") || "local-model");
+      syncRange("microphone.gain", getPath(config, "microphone.gain"));
+      syncRange("microphone.vad_threshold", getPath(config, "microphone.vad_threshold"));
+      updateMeterUi(lastMeterRms);
+      syncDevicesTabVisibility();
+      syncModelVisibility();
+    }
+
+
+    function readForm() {
+      const config = {};
+      for (const input of form.elements) {
+        if (!input.name) continue;
+        if (input.type === "password" && !input.value.trim()) continue;
+        let value = input.type === "checkbox" ? input.checked : input.value;
+        if (input.type === "number") value = Number(value);
+        setPath(config, input.name, value);
+      }
+      const hotkeys = hotkeyTextToList(whisperHotkeyInput.value);
+      setPath(config, "microphone.whisper_hotkeys", hotkeys);
+      setPath(config, "microphone.whisper_hotkey", hotkeys[0] || "f8");
+      const llmProvider = getPath(config, "llm.provider") || "inworld";
+      const voiceResponse = Boolean(getPath(config, "tts.enabled"));
+      const whisperModel = getPath(config, "whisper.model") || "base";
+      const sttLanguage = getPath(config, "speech.stt_language") || "pt";
+      const ttsLanguage = getPath(config, "speech.tts_language") || "pt";
+      setPath(config, "provider", llmProvider);
+      setPath(config, "inworld.voice_response", voiceResponse);
+      setPath(config, "local.voice_response", voiceResponse);
+      setPath(config, "inworld.stt_provider", "whisper");
+      setPath(config, "local.stt_provider", "whisper");
+      setPath(config, "inworld.whisper_model", whisperModel);
+      setPath(config, "local.whisper_model", whisperModel);
+      setPath(config, "inworld.stt_language", sttLanguage);
+      setPath(config, "local.stt_language", sttLanguage);
+      setPath(config, "inworld.tts_language", ttsLanguage);
+      setPath(config, "local.tts_language", ttsLanguage);
+      const selectedWakeWord = String(getPath(config, "wake_word.selected_model") || "builtin:hey_jarvis");
+      if (selectedWakeWord.startsWith("file:")) {
+        setPath(config, "wake_word.model_names", []);
+        setPath(config, "wake_word.model_paths", [`wakeword/${selectedWakeWord.slice(5)}`]);
+      } else {
+        setPath(config, "wake_word.model_names", [selectedWakeWord.replace(/^builtin:/, "")]);
+        setPath(config, "wake_word.model_paths", []);
+      }
+      ensureMcpServerIds();
+      setPath(config, "mcps.servers", mcpServers.map((server) => ({
+        id: normalizeMcpId(server.id || server.name, "mcp_server"),
+        name: String(server.name || "").trim(),
+        url: String(server.url || "").trim(),
+        description: String(server.description || "").trim(),
+        auth_type: String(server.auth_type || "none"),
+        bearer_token: String(server.bearer_token || "").trim(),
+        tools: Array.isArray(server.tools) ? server.tools : [],
+        enabled: Boolean(server.enabled),
+      })).filter((server) => server.name || server.url));
+      return config;
+    }
+
+    async function loadConfig() {
+      setStatus("status.loading");
+      const res = await fetch("/api/config");
+      const config = await res.json();
+      const locale = getPath(config, "ui.locale") || DEFAULT_LOCALE;
+      if (locale !== currentLocale) await setLocale(locale);
+      fillForm(config);
+      setStatus("status.ready");
+    }
+
+
+
+    tabs.forEach((tab) => tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)));
+    if (chatSend) chatSend.addEventListener("click", sendChatMessage);
+    if (chatClear) chatClear.addEventListener("click", clearChatHistory);
+    if (chatInput) {
+      chatInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendChatMessage();
+        }
+      });
+      chatInput.addEventListener("input", autoResizeChatInput);
+    }
+    localeSelect.addEventListener("change", () => setLocale(localeSelect.value, {showStatus: true}).catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+    }));
+    voiceResponseToggle.addEventListener("change", syncModelVisibility);
+    llmProviderSelect.addEventListener("change", syncModelVisibility);
+    ttsProviderSelect.addEventListener("change", syncModelVisibility);
+    kokoroLangSelect.addEventListener("change", () => renderKokoroVoiceOptions(kokoroVoiceSelect.value));
+    lmstudioModelsRefresh.addEventListener("click", () => refreshLmStudioModels().catch((err) => {
+      setStatus("status.modelFetchFailed", {error: err.message});
+      lmstudioModelsRefresh.disabled = false;
+    }));
+    captureHotkey.addEventListener("click", openHotkeyCapture);
+    clearHotkeys.addEventListener("click", () => {
+      whisperHotkeyInput.value = "";
+      whisperHotkeyInput.dispatchEvent(new Event("input", {bubbles: true}));
+      setStatus("status.hotkeysCleared");
+    });
+    cancelHotkey.addEventListener("click", closeHotkeyCapture);
+    hotkeyModal.addEventListener("contextmenu", (event) => event.preventDefault());
+    window.addEventListener("keydown", (event) => {
+      if (!capturingHotkey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const value = normalizeCapturedKey(event);
+      if (value) setCapturedHotkey(value);
+    }, true);
+    window.addEventListener("mousedown", handleCapturedMouseEvent, true);
+    window.addEventListener("mouseup", handleCapturedMouseEvent, true);
+    window.addEventListener("auxclick", handleCapturedMouseEvent, true);
+    window.addEventListener("pointerdown", handleCapturedMouseEvent, true);
+    window.addEventListener("popstate", () => {
+      if (!capturingHotkey) return;
+      history.pushState({hotkeyCapture: true}, "", location.href);
+    });
+    window.addEventListener("resize", () => {
+      personaSheetSignature = "";
+      drawPersonaSheetPreview();
+      drawPersonaPreviewFrame();
+    });
+
+    document.querySelectorAll("[data-range]").forEach((range) => {
+      range.addEventListener("input", () => {
+        syncRange(range.dataset.range, range.value);
+        updateMeterUi(lastMeterRms);
+      });
+    });
+
+    document.querySelectorAll("[data-range-value]").forEach((number) => {
+      number.addEventListener("input", () => {
+        syncRange(number.dataset.rangeValue, number.value);
+        updateMeterUi(lastMeterRms);
+      });
+    });
+
+    meterToggle.addEventListener("click", async () => {
+      try {
+        if (micStream) await stopMeter();
+        else await startMeter();
+      } catch (err) {
+        setStatus("status.micError", {error: err.message});
+        await stopMeter();
+      }
+    });
+
+    haMcpValidate.addEventListener("click", async () => {
+      const url = haMcpUrl.value.trim();
+      if (!url) {
+        setText(haMcpStatus, "status.haUrlRequired");
+        return;
+      }
+      haMcpValidate.disabled = true;
+      setText(haMcpStatus, "status.haValidating");
+      try {
+        const res = await fetch("/api/mcps/home-assistant/validate", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({url}),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          setText(haMcpStatus, "status.haFailure", {error: data.error || t("status.haUnableToConnect")});
+          return;
+        }
+        const names = (data.sample_tools || []).map((tool) => tool.name).join(", ");
+        setText(haMcpStatus, "status.haConnected", {
+          count: data.tool_count,
+          names: names ? t("status.haSampleTools", {names}) : t("status.haNoSampleTools"),
+        });
+      } catch (err) {
+        setText(haMcpStatus, "status.haError", {error: err.message});
+      } finally {
+        haMcpValidate.disabled = false;
+      }
+    });
+
+    haEnabledInput.addEventListener("change", syncDevicesTabVisibility);
+    mcpAddServer.addEventListener("click", () => {
+      mcpServers.push({
+        id: `mcp_${mcpServers.length + 1}`,
+        name: "",
+        url: "",
+        description: "",
+        auth_type: "none",
+        bearer_token: "",
+        tools: [],
+        enabled: true,
+      });
+      renderMcpServers();
+      setText(mcpStatus, "status.mcpPending");
+    });
+    mcpServerList.addEventListener("input", (event) => {
+      if (event.target instanceof HTMLInputElement) updateMcpServerFromInput(event.target);
+    });
+    mcpServerList.addEventListener("change", (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) updateMcpServerFromInput(event.target);
+    });
+    mcpServerList.addEventListener("click", (event) => {
+      const validateButton = event.target.closest("[data-mcp-validate]");
+      if (validateButton) {
+        validateExternalMcp(Number(validateButton.dataset.mcpValidate)).catch((err) => {
+          setText(mcpStatus, "status.mcpValidationFailed", {error: err.message});
+        });
+        return;
+      }
+      const oauthButton = event.target.closest("[data-mcp-oauth]");
+      if (oauthButton) {
+        connectExternalMcpOAuth(Number(oauthButton.dataset.mcpOauth)).catch((err) => {
+          setText(mcpStatus, "status.mcpOAuthFailed", {error: err.message});
+        });
+        return;
+      }
+      const deleteButton = event.target.closest("[data-mcp-delete]");
+      if (deleteButton) {
+        mcpServers.splice(Number(deleteButton.dataset.mcpDelete), 1);
+        renderMcpServers();
+        setText(mcpStatus, "status.mcpRemoved");
+      }
+    });
+    devicesFilter.addEventListener("input", renderDevices);
+    devicesToggleAll.addEventListener("click", toggleVisibleDevices);
+    devicesRefresh.addEventListener("click", () => refreshDevices().catch((err) => {
+      setText(devicesSummary, "status.devicesImportFailed", {error: err.message});
+      notify("status.devicesImportFailed", "error", {error: err.message});
+      devicesRefresh.disabled = false;
+    }));
+    devicesSave.addEventListener("click", () => saveDevices().catch((err) => {
+      setText(devicesSummary, "status.saveError", {error: err.message});
+      notify("status.saveError", "error", {error: err.message});
+      devicesSave.disabled = false;
+    }));
+    devicesList.addEventListener("input", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      const nameIndex = target.dataset.deviceName;
+      const aliasesIndex = target.dataset.deviceAliases;
+      if (nameIndex === undefined && aliasesIndex === undefined) return;
+      if (nameIndex !== undefined) devices[Number(nameIndex)].name = target.value;
+      if (aliasesIndex !== undefined) devices[Number(aliasesIndex)].aliases = textToAliases(target.value);
+      devicesDirty = true;
+      setText(devicesSummary, "status.devicesPending");
+    });
+    devicesList.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      const enabledIndex = target.dataset.deviceEnabled;
+      if (enabledIndex !== undefined) {
+        devices[Number(enabledIndex)].enabled = target.checked;
+        devicesDirty = true;
+        renderDevices();
+        setText(devicesSummary, "status.devicesPending");
+      }
+    });
+    devicesList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-device-delete]");
+      if (!button) return;
+      const index = Number(button.dataset.deviceDelete);
+      devices.splice(index, 1);
+      devicesDirty = true;
+      renderDevices();
+      setText(devicesSummary, "status.deviceRemoved");
+      notify("status.deviceRemoved", "info");
+    });
+    personaLibrarySelect.addEventListener("change", renderPersonaLibrary);
+    personaNameInput.addEventListener("input", () => {
+      const hasName = Boolean(personaNameInput.value.trim());
+      personaSaveName.disabled = !selectedPersonaId() || !hasName;
+      setStatus("status.personaNamePending");
+    });
+    personaCreate.addEventListener("click", openPersonaCreateModal);
+    personaCreateCancel.addEventListener("click", closePersonaCreateModal);
+    personaCreateConfirm.addEventListener("click", () => createBlankPersona().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      personaCreateConfirm.disabled = false;
+      renderPersonaLibrary();
+    }));
+    personaCreateName.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        personaCreateConfirm.click();
+      } else if (event.key === "Escape") {
+        closePersonaCreateModal();
+      }
+    });
+    personaCreateModal.addEventListener("click", (event) => {
+      if (event.target === personaCreateModal) closePersonaCreateModal();
+    });
+    personaSaveName.addEventListener("click", () => saveSelectedPersonaName().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      renderPersonaLibrary();
+    }));
+    personaEdit.addEventListener("click", () => editSelectedPersona().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      personaEdit.disabled = false;
+    }));
+    personaActivate.addEventListener("click", () => activateSelectedPersona().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      renderPersonaLibrary();
+    }));
+    personaOptimize.addEventListener("click", () => optimizeSelectedPersona().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      renderPersonaLibrary();
+    }));
+    personaExport.addEventListener("click", exportSelectedPersona);
+    personaDelete.addEventListener("click", deleteSelectedPersona);
+    personaDeleteCancel.addEventListener("click", closePersonaDeleteModal);
+    personaDeleteConfirm.addEventListener("click", () => confirmPersonaDelete().catch((err) => {
+      setStatus("status.genericError", {error: err.message});
+      notify("status.genericError", "error", {error: err.message});
+      personaDeleteConfirm.disabled = false;
+      renderPersonaLibrary();
+    }));
+    personaDeleteModal.addEventListener("click", (event) => {
+      if (event.target === personaDeleteModal) closePersonaDeleteModal();
+    });
+    personaOpenFiles.addEventListener("click", openPersonaFilesModal);
+    personaCloseFiles.addEventListener("click", closePersonaFilesModal);
+    personaFilesModal.addEventListener("click", (event) => {
+      if (event.target === personaFilesModal) closePersonaFilesModal();
+    });
+    personaImportBtn.addEventListener("click", () => importPersonaPackage().catch((err) => {
+      setStatus("status.personaImportError", {error: err.message});
+      notify("status.personaImportError", "error", {error: err.message});
+      personaImportBtn.disabled = false;
+    }));
+    personaUploadBtn.addEventListener("click", () => uploadPersonaAsset().catch((err) => {
+      setStatus("status.assetUploadError", {error: err.message});
+      notify("status.assetUploadError", "error", {error: err.message});
+    }));
+    personaAssetList.addEventListener("click", (event) => {
+      const renameName = event.target.closest("[data-asset-rename]")?.dataset.assetRename;
+      const deleteName = event.target.closest("[data-asset-delete]")?.dataset.assetDelete;
+      if (renameName) {
+        renamePersonaAssetFlow(renameName).catch((err) => notify("status.genericError", "error", {error: err.message}));
+      } else if (deleteName) {
+        deletePersonaAssetFlow(deleteName).catch((err) => notify("status.genericError", "error", {error: err.message}));
+      }
+    });
+    personaAddAnimation.addEventListener("click", () => {
+      if (!personaConfig) return;
+      personaConfig.animations ??= [];
+      writePersonaEditor();
+      personaConfig.animations.push({
+        name: "new_animation",
+        kind: "idle",
+        file: personaSpriteAssets()[0]?.name || "",
+        frame_size: 512,
+        columns: 1,
+        rows: 1,
+        used_frames: 1,
+        fps: 24,
+        idle_after: 0,
+      });
+      personaEditingIndex = personaConfig.animations.length - 1;
+      renderPersonaAnimations();
+      // Persist the new draft immediately so an editor reload (asset upload,
+      // F5) cannot silently drop it.
+      savePersona()
+        .then(() => setStatus("status.animationAdded"))
+        .catch((err) => {
+          setStatus("status.saveError", {error: err.message});
+          notify("status.saveError", "error", {error: err.message});
+        });
+    });
+    personaList.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest("[data-persona-delete]");
+      if (deleteButton && personaConfig?.animations) {
+        personaConfig.animations.splice(Number(deleteButton.dataset.personaDelete), 1);
+        personaEditingIndex = Math.max(0, Math.min(personaEditingIndex, personaConfig.animations.length - 1));
+        renderPersonaAnimations();
+        // Persist right away: a removal kept only in the page state used to
+        // resurrect on any editor reload (asset delete, F5), and the server
+        // kept blocking the referenced sprite's deletion as "in use".
+        savePersona()
+          .then(() => setStatus("status.animationRemoved"))
+          .catch((err) => {
+            setStatus("status.saveError", {error: err.message});
+            notify("status.saveError", "error", {error: err.message});
+          });
+        return;
+      }
+      const row = event.target.closest("[data-persona-row]");
+      if (!row) return;
+      writePersonaEditor();
+      personaEditingIndex = Number(row.dataset.personaRow);
+      renderPersonaAnimations();
+    });
+    [personaEditName, personaEditKind, personaEditFile, personaEditFrameSize, personaEditColumns, personaEditRows, personaEditUsedFrames, personaEditFps, personaEditIdleAfter].forEach((input) => {
+      input.addEventListener("input", () => {
+        writePersonaEditor();
+        restartPersonaPreview();
+        setStatus("status.personaPending");
+      });
+      input.addEventListener("change", () => {
+        writePersonaEditor();
+        restartPersonaPreview();
+        setStatus("status.personaPending");
+      });
+    });
+    personaEditKind.addEventListener("change", updatePersonaIdleVisibility);
+
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setStatus("status.saving");
+      try {
+        const res = await fetch("/api/config", {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(readForm()),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          const message = error.detail || res.statusText;
+          setStatus("status.saveError", {error: message});
+          notify("status.saveError", "error", {error: message});
+          return;
+        }
+        const saved = await res.json();
+        const locale = getPath(saved, "ui.locale") || DEFAULT_LOCALE;
+        if (locale !== currentLocale) await setLocale(locale);
+        fillForm(saved);
+        await savePersona();
+        await saveTheme();
+        // Device edits have their own save button, but flushing them here too
+        // means the big "Save configuration" button never silently drops them.
+        if (devicesDirty) await saveDevices();
+        setStatus("status.saved");
+        notify("status.saved");
+      } catch (err) {
+        setStatus("status.saveError", {error: err.message});
+        notify("status.saveError", "error", {error: err.message});
+      }
+    });
+
+
+    async function loadAll() {
+      await setLocale(DEFAULT_LOCALE);
+      await loadLocales();
+      await Promise.all([loadKokoroVoices(), loadKokoroModels(), loadWakeWordModels()]);
+      await Promise.all([loadConfig(), loadPersona(), loadTheme()]);
+    }
+
+    document.querySelector("#reload").addEventListener("click", () => {
+      loadAll().catch((err) => setStatus("status.genericError", {error: err.message}));
+    });
+    loadAll()
+      .then(() => {
+        // Allow deep-linking to a tab (e.g. the launcher opens ?tab=model on the
+        // very first run). Fall back to the chat tab for anything unknown/hidden.
+        const wanted = new URLSearchParams(window.location.search).get("tab");
+        const target = Array.from(tabs).find((tab) => tab.dataset.tab === wanted && !tab.hidden);
+        setActiveTab(target ? wanted : "chat");
+      })
+      .catch((err) => setStatus("status.genericError", {error: err.message}));
+  </script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+{
+  "window": {
+    "width": 540,
+    "height": 600,
+    "always_on_top": true,
+    "transparent": true
+  },
+  "sprite": {
+    "x": 249,
+    "y": 219,
+    "display_size": 282
+  },
+  "subtitle": {
+    "x": 3,
+    "y": 337,
+    "width": 532,
+    "height": 168,
+    "font_size": 18
+  },
+  "input": {
+    "x": 45,
+    "y": 530,
+    "width": 448,
+    "height": 50
+  },
+  "animations": [
+    {
+      "name": "idle_1",
+      "kind": "idle",
+      "file": "idle_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 94,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "idle_2",
+      "kind": "idle",
+      "file": "idle_2.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 94,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "talk_3",
+      "kind": "talk",
+      "file": "talk_3.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 5,
+      "used_frames": 48,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "talk_4",
+      "kind": "talk",
+      "file": "talk_4.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 3,
+      "used_frames": 24,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "idle_3",
+      "kind": "idle",
+      "file": "idle_3.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "thinking_1",
+      "kind": "thinking",
+      "file": "thinking_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "thinking_2",
+      "kind": "thinking",
+      "file": "thinking_2.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "error_1",
+      "kind": "error",
+      "file": "error_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "start_1",
+      "kind": "start",
+      "file": "start_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "listening_1",
+      "kind": "listening",
+      "file": "listening_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    },
+    {
+      "name": "poke_1",
+      "kind": "poke",
+      "file": "poke_1.webp",
+      "frame_size": 512,
+      "columns": 10,
+      "rows": 10,
+      "used_frames": 96,
+      "fps": 24,
+      "idle_after": 0
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Install before requirements-core.txt when using NVIDIA CUDA.
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.8.0
+torchvision
+torchaudio
