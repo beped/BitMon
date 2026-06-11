@@ -10,9 +10,21 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from core.config import get_inworld_api_key_source, is_inworld_api_key_configured, set_inworld_api_key
-from core.config_defaults import DEFAULT_CONFIG, CURRENT_CONFIG_VERSION
-from core.config_models import validate_config
+from core.config import (
+    get_inworld_api_key_source,
+    is_anthropic_api_key_configured,
+    is_inworld_api_key_configured,
+    is_openai_api_key_configured,
+    set_anthropic_api_key,
+    set_inworld_api_key,
+    set_openai_api_key,
+)
+from core.config_defaults import (
+    DEFAULT_CONFIG,
+    CURRENT_CONFIG_VERSION,
+    HOME_ASSISTANT_DEFAULT_ANSWERS,
+)
+from core.config_models import LLM_PROVIDERS, validate_config
 from core.mcp_auth_store import (
     delete_bearer_token,
     delete_oauth_credentials,
@@ -102,13 +114,31 @@ def _extract_secret_updates(config: dict[str, Any]) -> dict[str, str]:
             if isinstance(value, str) and value.strip():
                 updates["inworld_api_key"] = value.strip()
 
+    def pop_named_secret(section: dict[str, Any], keys: set[str], secret_name: str) -> None:
+        for key in list(keys):
+            value = section.pop(key, None)
+            if isinstance(value, str) and value.strip():
+                updates[secret_name] = value.strip()
+
     secrets = config.get("secrets")
     if isinstance(secrets, dict):
+        pop_named_secret(secrets, {"openai_api_key", "openaiApiKey", "OPENAI_API_KEY"}, "openai_api_key")
+        pop_named_secret(secrets, {"anthropic_api_key", "anthropicApiKey", "ANTHROPIC_API_KEY"}, "anthropic_api_key")
         pop_secret_fields(secrets)
 
     inworld = config.get("inworld")
     if isinstance(inworld, dict):
         pop_secret_fields(inworld)
+
+    # Keys typed into the provider sections (or left over from old configs)
+    # must never be persisted to disk: move them to the OS credential store.
+    openai_section = config.get("openai")
+    if isinstance(openai_section, dict):
+        pop_named_secret(openai_section, {"api_key", "apiKey", "openai_api_key"}, "openai_api_key")
+
+    anthropic_section = config.get("anthropic")
+    if isinstance(anthropic_section, dict):
+        pop_named_secret(anthropic_section, {"api_key", "apiKey", "anthropic_api_key"}, "anthropic_api_key")
 
     mcps = config.get("mcps")
     servers = mcps.get("servers") if isinstance(mcps, dict) else None
@@ -134,6 +164,10 @@ def _apply_secret_updates(config: dict[str, Any]) -> bool:
     api_key = updates.get("inworld_api_key")
     if api_key:
         set_inworld_api_key(api_key)
+    if updates.get("openai_api_key"):
+        set_openai_api_key(updates["openai_api_key"])
+    if updates.get("anthropic_api_key"):
+        set_anthropic_api_key(updates["anthropic_api_key"])
     for key, value in updates.items():
         if key.startswith("mcp_bearer_token:"):
             set_bearer_token(key.split(":", 1)[1], value)
@@ -147,6 +181,8 @@ def _set_secret_flags(config: dict[str, Any]) -> None:
         config["secrets"] = secrets
     secrets["inworld_api_key_configured"] = is_inworld_api_key_configured()
     secrets["inworld_api_key_source"] = get_inworld_api_key_source()
+    secrets["openai_api_key_configured"] = is_openai_api_key_configured()
+    secrets["anthropic_api_key_configured"] = is_anthropic_api_key_configured()
 
 
 def _normalize_mcp_servers(config: dict[str, Any]) -> None:
@@ -191,6 +227,53 @@ def _normalize_mcp_servers(config: dict[str, Any]) -> None:
     mcps["servers"] = normalized
 
 
+def _normalize_ha_answers(config: dict[str, Any]) -> None:
+    mcps = config.get("mcps")
+    if not isinstance(mcps, dict):
+        return
+    home_assistant = mcps.get("home_assistant")
+    if not isinstance(home_assistant, dict):
+        return
+    raw_answers = home_assistant.get("answers")
+    if not isinstance(raw_answers, list):
+        home_assistant["answers"] = deepcopy(HOME_ASSISTANT_DEFAULT_ANSWERS)
+        return
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, answer in enumerate(raw_answers):
+        if not isinstance(answer, dict):
+            continue
+        text = " ".join(str(answer.get("text") or "").split())
+        action = str(answer.get("action") or "").strip().lower()
+        if not text or action not in ("turn_on", "turn_off"):
+            continue
+        language = str(answer.get("language") or "en").strip().lower()[:2] or "en"
+        answer_id = str(answer.get("id") or "").strip() or f"answer_{index + 1}"
+        base_id = answer_id
+        suffix = 2
+        while answer_id in seen:
+            answer_id = f"{base_id}_{suffix}"
+            suffix += 1
+        seen.add(answer_id)
+        normalized.append({
+            "id": answer_id,
+            "language": language,
+            "action": action,
+            "text": text,
+            "enabled": bool(answer.get("enabled", True)),
+        })
+    # Invariant: each language+action group keeps at least one enabled answer,
+    # so toggling everything off can never leave a state without a spoken
+    # confirmation. The UI blocks this too; this covers direct API writes.
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for answer in normalized:
+        groups.setdefault((answer["language"], answer["action"]), []).append(answer)
+    for group in groups.values():
+        if not any(answer["enabled"] for answer in group):
+            group[0]["enabled"] = True
+    home_assistant["answers"] = normalized
+
+
 def _set_mcp_secret_flags(config: dict[str, Any]) -> None:
     mcps = config.get("mcps")
     servers = mcps.get("servers") if isinstance(mcps, dict) else None
@@ -207,7 +290,7 @@ def _set_mcp_secret_flags(config: dict[str, Any]) -> None:
 
 def _provider_value(value: Any, default: str = "inworld") -> str:
     provider = str(value or default).strip().lower()
-    return provider if provider in {"inworld", "local"} else default
+    return provider if provider in LLM_PROVIDERS else default
 
 
 def _tts_provider_value(value: Any, default: str = "inworld") -> str:
@@ -315,7 +398,10 @@ def _sync_legacy_voice_inputs(config: dict[str, Any]) -> None:
 def migrate_config(config: dict[str, Any]) -> dict[str, Any]:
     """Return a migrated copy of a persisted config dict."""
     migrated = deepcopy(config)
-    migrated.pop("openai", None)
+    # Note: the "openai" section is a real provider section now. Leftover keys
+    # from the legacy OpenAI-realtime era are dropped by OpenAiConfig
+    # (extra="ignore") and any plaintext api_key in it is moved to the keyring
+    # by _extract_secret_updates, so no purge is needed here.
 
     version = int(migrated.get("config_version") or 1)
     if version < 2:
@@ -336,10 +422,10 @@ def migrate_config(config: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_config(config: dict[str, Any]) -> dict[str, Any]:
     config = migrate_config(config)
-    config.pop("openai", None)
     _extract_secret_updates(config)
     _sync_voice_sections(config)
     _normalize_mcp_servers(config)
+    _normalize_ha_answers(config)
     microphone = config.setdefault("microphone", {})
     if isinstance(microphone, dict):
         _normalize_hotkeys(microphone)

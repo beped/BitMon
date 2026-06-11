@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import ast
 import json
 import os
 import re
+import time
 import webbrowser
 from typing import Any
 
@@ -116,6 +118,9 @@ TOOL_INSTRUCTIONS = (
     "When calling screen_analyze, pass the user's actual request or goal as the question. "
     "If the user asks to open the BitMon configuration page or settings, call open_configuration. "
     "If the user asks to control or query smart-home devices, call home_assistant. "
+    "NEVER claim a smart-home action was performed unless home_assistant was called in the CURRENT turn "
+    "and returned ok=true; previous turns do not count. If you did not call it yet, call it now instead "
+    "of answering. "
     "If the user asks which devices, lights, or rooms you can see or control, call home_assistant with "
     "action='list' and, when implied, the domain (e.g. domain='light' for lights). "
     "If the user asks for something that belongs to a configured external MCP server, call external_mcp "
@@ -292,6 +297,23 @@ def _strip_leaked_tool_markup(text: str) -> str:
     return cleaned.strip()
 
 
+# When the provider rejects the tool definitions themselves (e.g. "tool
+# calling is restricted on your plan"), skip sending them for a while instead
+# of paying a failed request + retry on every single turn.
+_TOOLS_REJECTED_UNTIL = 0.0
+_TOOLS_REJECTED_TTL_SECONDS = 600.0
+
+
+def _known_tool_names(tools: list[dict[str, Any]]) -> list[str]:
+    names: list[str] = []
+    for tool in tools:
+        function = tool.get("function") if isinstance(tool, dict) else None
+        name = str((function or {}).get("name") or tool.get("name") or "") if isinstance(tool, dict) else ""
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
 def _parse_leaked_tool_calls(
     text: str,
     tools: list[dict[str, Any]],
@@ -307,12 +329,7 @@ def _parse_leaked_tool_calls(
     raw = str(text or "")
     if not raw or not _LEAKED_TOOL_MARKUP_RE.search(raw):
         return []
-    names: list[str] = []
-    for tool in tools:
-        function = tool.get("function") if isinstance(tool, dict) else None
-        name = str((function or {}).get("name") or tool.get("name") or "") if isinstance(tool, dict) else ""
-        if name and name not in names:
-            names.append(name)
+    names = _known_tool_names(tools)
     if not names:
         return []
     decoder = json.JSONDecoder()
@@ -332,6 +349,45 @@ def _parse_leaked_tool_calls(
                     seen.add(key)
                     calls.append((match.group(0), arguments))
             break
+    return calls
+
+
+def _parse_pseudo_tool_calls(
+    text: str,
+    tools: list[dict[str, Any]],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Recover calls written as plain text, e.g. home_assistant(action='turn_off').
+
+    Models running without native tool calling (provider plan restriction)
+    still announce the call this way, because the system prompt names the
+    tools. That text must never reach the TTS — parse and execute it instead.
+    """
+    raw = str(text or "")
+    names = _known_tool_names(tools)
+    if not raw or not names:
+        return []
+    calls: list[tuple[str, dict[str, Any]]] = []
+    seen: set[str] = set()
+    for name in names:
+        for match in re.finditer(rf"\b{re.escape(name)}\s*\(([^()]*)\)", raw):
+            inner = match.group(1).strip()
+            arguments: dict[str, Any] = {}
+            if inner:
+                try:
+                    call_expr = ast.parse(f"_call({inner})", mode="eval").body
+                except SyntaxError:
+                    continue
+                for keyword in getattr(call_expr, "keywords", []):
+                    if keyword.arg is None:
+                        continue
+                    try:
+                        arguments[keyword.arg] = ast.literal_eval(keyword.value)
+                    except (ValueError, SyntaxError):
+                        continue
+            key = f"{name}::{json.dumps(arguments, sort_keys=True, ensure_ascii=False)}"
+            if key not in seen:
+                seen.add(key)
+                calls.append((name, arguments))
     return calls
 
 
@@ -361,9 +417,15 @@ async def create_chat_completion_with_tools(
     **kwargs: Any,
 ) -> tuple[str, list[str]]:
     """Run a Chat Completions request and execute model-selected BitMon tools."""
+    global _TOOLS_REJECTED_UNTIL
     request_messages = [dict(message) for message in messages]
     called_tools: list[str] = []
     last_tool_result: dict[str, Any] | None = None
+    executed_text_calls: set[str] = set()
+    tools_active = list(tools or [])
+    if tools_active and time.monotonic() < _TOOLS_REJECTED_UNTIL:
+        print("[Tool] tool calling disabled by provider plan; using text fallback")
+        tools_active = []
 
     for _round in range(max_tool_rounds):
         request: dict[str, Any] = {
@@ -371,13 +433,20 @@ async def create_chat_completion_with_tools(
             "messages": request_messages,
             **kwargs,
         }
-        if tools:
-            request["tools"] = tools
+        if tools_active:
+            request["tools"] = tools_active
             request["tool_choice"] = "auto"
         try:
             response = await client.chat.completions.create(**request)
         except Exception as exc:
-            if tools and _tools_maybe_unsupported(exc):
+            if tools_active and _tools_maybe_unsupported(exc):
+                # Loud on purpose: from here on the model CANNOT call any tool
+                # natively. If this shows up in the logs, the configured
+                # model/provider rejects tool definitions (e.g. plan limits);
+                # BitMon degrades to parsing calls the model writes as text.
+                print(f"[Tool] provider rejected tool definitions; retrying WITHOUT tools: {str(exc)[:200]}")
+                _TOOLS_REJECTED_UNTIL = time.monotonic() + _TOOLS_REJECTED_TTL_SECONDS
+                tools_active = []
                 response = await client.chat.completions.create(
                     model=model,
                     messages=request_messages,
@@ -393,18 +462,56 @@ async def create_chat_completion_with_tools(
         else:
             raw_content = getattr(message, "content", None) or ""
             answer = _strip_leaked_tool_markup(raw_content)
-            if answer:
-                return answer, called_tools
-            leaked_calls = _parse_leaked_tool_calls(raw_content, tools)
-            if not leaked_calls:
+            recovered = _parse_leaked_tool_calls(raw_content, tools)
+            if not recovered and answer:
+                # A model without native tool calling announces the call as
+                # plain text (e.g. "home_assistant(action='turn_off')"); that
+                # must never be spoken — parse and execute it instead.
+                recovered = _parse_pseudo_tool_calls(answer, tools)
+            if not recovered:
+                if answer:
+                    return answer, called_tools
                 if raw_content.strip():
                     # Leaked tool markup we could not parse: retry the round
                     # instead of surfacing an empty answer.
+                    print("[Tool] model leaked unparseable tool-call markup; retrying round")
                     continue
                 if last_tool_result is not None:
                     return _tool_result_answer(last_tool_result), called_tools
                 return "", called_tools
-            # Execute the recovered calls exactly like structured ones.
+            print(f"[Tool] recovered {len(recovered)} tool call(s) from text output")
+            if not tools_active:
+                # Degraded mode (no native tool calling): execute the parsed
+                # calls and feed the results back as plain context, so the
+                # next round can phrase the spoken answer.
+                pending = []
+                for tool_name, arguments in recovered:
+                    key = f"{tool_name}::{json.dumps(arguments, sort_keys=True, ensure_ascii=False)}"
+                    if key not in executed_text_calls:
+                        executed_text_calls.add(key)
+                        pending.append((tool_name, arguments))
+                if not pending:
+                    # The model repeated an already-executed call instead of
+                    # phrasing the result: answer from the result we have.
+                    if last_tool_result is not None:
+                        return _tool_result_answer(last_tool_result), called_tools
+                    return answer, called_tools
+                for tool_name, arguments in pending:
+                    result = await execute_tool_call(tool_name, arguments, user_request=user_request)
+                    called_tools.append(tool_name)
+                    last_tool_result = result
+                    request_messages.append({
+                        "role": "system",
+                        "content": (
+                            f"Tool '{tool_name}' was executed with arguments "
+                            f"{json.dumps(arguments, ensure_ascii=False)}. "
+                            f"Result: {json.dumps(result, ensure_ascii=False)[:1500]} "
+                            "Answer the user now based on this result, in the mandatory "
+                            "language, plain text only — never repeat the tool syntax."
+                        ),
+                    })
+                continue
+            # Native mode: execute the recovered calls exactly like structured ones.
             tool_calls = [
                 {
                     "id": f"leaked_{_round}_{index}",
@@ -414,7 +521,7 @@ async def create_chat_completion_with_tools(
                         "arguments": json.dumps(arguments, ensure_ascii=False),
                     },
                 }
-                for index, (tool_name, arguments) in enumerate(leaked_calls)
+                for index, (tool_name, arguments) in enumerate(recovered)
             ]
             request_messages.append({"role": "assistant", "content": "", "tool_calls": tool_calls})
         for tool_call in tool_calls:
@@ -442,6 +549,24 @@ async def create_chat_completion_with_tools(
     return "", called_tools
 
 
+# Log labels: BitMon capabilities vs external integrations, so the launcher
+# log shows at a glance what the model invoked and how it went.
+TOOL_LOG_LABELS = {
+    "screen_analyze": "[Capability] Screen analysis",
+    "open_configuration": "[Capability] Open configuration",
+    "home_assistant": "[Tool] Home Assistant (MCP)",
+    "external_mcp": "[Tool] External MCP",
+}
+
+
+def _compact_json(value: Any, limit: int = 220) -> str:
+    try:
+        text = json.dumps(value, ensure_ascii=False)
+    except (TypeError, ValueError):
+        text = str(value)
+    return text if len(text) <= limit else text[:limit] + "..."
+
+
 async def execute_tool_call(
     name: str,
     raw_arguments: str | dict[str, Any] | None,
@@ -458,6 +583,24 @@ async def execute_tool_call(
     else:
         arguments = {}
 
+    label = TOOL_LOG_LABELS.get(name, f"[Tool] {name}")
+    print(f"{label} call {_compact_json(arguments)}")
+    started = time.perf_counter()
+    result = await _dispatch_tool_call(name, arguments, user_request)
+    elapsed = time.perf_counter() - started
+    if result.get("ok"):
+        print(f"{label} ok in {elapsed:.2f}s")
+    else:
+        error = str(result.get("error") or "unknown error")[:200]
+        print(f"{label} FAILED in {elapsed:.2f}s: {error}")
+    return result
+
+
+async def _dispatch_tool_call(
+    name: str,
+    arguments: dict[str, Any],
+    user_request: str,
+) -> dict[str, Any]:
     if name == "screen_analyze":
         return await analyze_screen(str(arguments.get("question") or ""), user_request=user_request)
 

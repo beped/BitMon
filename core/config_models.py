@@ -173,16 +173,43 @@ class LocalConfig(BaseModel):
         return _non_empty(value, "pf_dora")
 
 
+LLM_PROVIDERS = {"inworld", "local", "openai", "anthropic"}
+
+
+class OpenAiConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    model: str = "gpt-4o-mini"
+    max_tokens: int = Field(default=300, ge=32, le=4096)
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def validate_model(cls, value: Any) -> str:
+        return _non_empty(value, "gpt-4o-mini")
+
+
+class AnthropicConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    model: str = "claude-opus-4-8"
+    max_tokens: int = Field(default=300, ge=32, le=4096)
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def validate_model(cls, value: Any) -> str:
+        return _non_empty(value, "claude-opus-4-8")
+
+
 class LlmConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    provider: Literal["inworld", "local"] = "inworld"
+    provider: Literal["inworld", "local", "openai", "anthropic"] = "inworld"
 
     @field_validator("provider", mode="before")
     @classmethod
     def validate_provider(cls, value: Any) -> str:
         provider = str(value or "inworld").strip().lower()
-        return provider if provider in {"inworld", "local"} else "inworld"
+        return provider if provider in LLM_PROVIDERS else "inworld"
 
 
 class TtsConfig(BaseModel):
@@ -333,13 +360,15 @@ class SecretsConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
     inworld_api_key_configured: bool = False
     inworld_api_key_source: str = "none"
+    openai_api_key_configured: bool = False
+    anthropic_api_key_configured: bool = False
 
 
 class BitMonConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     config_version: int = CURRENT_CONFIG_VERSION
-    provider: Literal["inworld", "local"] = "inworld"
+    provider: Literal["inworld", "local", "openai", "anthropic"] = "inworld"
     llm: LlmConfig = Field(default_factory=LlmConfig)
     tts: TtsConfig = Field(default_factory=TtsConfig)
     speech: SpeechConfig = Field(default_factory=SpeechConfig)
@@ -347,6 +376,8 @@ class BitMonConfig(BaseModel):
     character: CharacterConfig = Field(default_factory=CharacterConfig)
     inworld: InworldConfig = Field(default_factory=InworldConfig)
     local: LocalConfig = Field(default_factory=LocalConfig)
+    openai: OpenAiConfig = Field(default_factory=OpenAiConfig)
+    anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
     microphone: MicrophoneConfig = Field(default_factory=MicrophoneConfig)
     wake_word: WakeWordConfig = Field(default_factory=WakeWordConfig)
     overlay: OverlayConfig = Field(default_factory=OverlayConfig)
@@ -360,7 +391,7 @@ class BitMonConfig(BaseModel):
     @classmethod
     def validate_provider(cls, value: Any) -> str:
         provider = str(value or "inworld").strip().lower()
-        return provider if provider in {"inworld", "local"} else "inworld"
+        return provider if provider in LLM_PROVIDERS else "inworld"
 
     @field_validator("config_version", mode="before")
     @classmethod

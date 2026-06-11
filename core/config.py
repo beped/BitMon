@@ -5,7 +5,13 @@ No ``.env`` file is read; the legacy dotenv support was removed."""
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from core.secret_store import INWORLD_API_KEY_SECRET, get_secret, set_secret
+from core.secret_store import (
+    ANTHROPIC_API_KEY_SECRET,
+    INWORLD_API_KEY_SECRET,
+    OPENAI_API_KEY_SECRET,
+    get_secret,
+    set_secret,
+)
 
 
 class Settings(BaseSettings):
@@ -61,3 +67,29 @@ def set_inworld_api_key(api_key: str) -> None:
 def is_inworld_api_key_configured() -> bool:
     """Return whether an Inworld API key is available without exposing it."""
     return bool(get_inworld_api_key())
+
+
+def get_openai_api_key() -> str:
+    """Return the OpenAI API key from the OS credential store."""
+    return get_secret(OPENAI_API_KEY_SECRET)
+
+
+def set_openai_api_key(api_key: str) -> None:
+    set_secret(OPENAI_API_KEY_SECRET, api_key)
+
+
+def is_openai_api_key_configured() -> bool:
+    return bool(get_openai_api_key())
+
+
+def get_anthropic_api_key() -> str:
+    """Return the Anthropic API key from the OS credential store."""
+    return get_secret(ANTHROPIC_API_KEY_SECRET)
+
+
+def set_anthropic_api_key(api_key: str) -> None:
+    set_secret(ANTHROPIC_API_KEY_SECRET, api_key)
+
+
+def is_anthropic_api_key_configured() -> bool:
+    return bool(get_anthropic_api_key())

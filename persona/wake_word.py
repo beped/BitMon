@@ -120,8 +120,13 @@ class WakeWordListener:
         kwargs: dict[str, Any] = {"wakeword_models": wakeword_models}
         if self.vad_threshold > 0:
             kwargs["vad_threshold"] = self.vad_threshold
+        # Match the inference framework to the selected file type: .tflite
+        # models need tflite_runtime; everything else runs on onnxruntime.
+        framework = "onnx"
+        if any(str(path).lower().endswith(".tflite") for path in self.model_paths):
+            framework = "tflite"
         try:
-            kwargs["inference_framework"] = "onnx"
+            kwargs["inference_framework"] = framework
             return Model(**kwargs)
         except TypeError:
             kwargs.pop("inference_framework", None)

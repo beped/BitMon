@@ -1,32 +1,37 @@
 """Screen capture and analysis tools.
 
 Screen analysis uses the model configured for the active provider whenever that
-model can accept images. When it cannot (or the attempt fails), it falls back to
-the Inworld Router vision model (gpt-4o-mini). A fully local setup works as long
-as the local model is vision-capable; no Inworld key is required in that case.
+model can accept images. The fallback is provider-specific:
+
+- inworld / local -> Inworld Router vision model (gpt-4o-mini, needs Inworld key)
+- openai          -> gpt-4o-mini on the OpenAI API (same OpenAI key)
+- anthropic       -> no fallback: every current Claude model accepts images,
+                     so the configured model is used directly
+
+A fully local setup works as long as the local model is vision-capable.
 """
 
 from __future__ import annotations
 
 import base64
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
 from openai import AsyncOpenAI
 
-from core.config import get_inworld_api_key, settings
+from core.config import get_anthropic_api_key, get_inworld_api_key, get_openai_api_key, settings
 from core.config_store import get_config
 from core.security import redact_for_log
-from services.inworld_auth import create_inworld_router_client
 
 
-_router_client: AsyncOpenAI | None = None
-_router_client_api_key: str = ""
+_openai_client: AsyncOpenAI | None = None
+_openai_client_api_key: str = ""
 
 VISION_MAX_TOKENS = 120
 VISION_TEMPERATURE = 0.2
+OPENAI_VISION_FALLBACK_MODEL = "gpt-4o-mini"
 
 
 LANGUAGE_NAMES = {
@@ -69,8 +74,12 @@ class Screenshot:
 @dataclass(frozen=True)
 class VisionAttempt:
     label: str
-    client: AsyncOpenAI
+    client: Any
     model: str
+    # "openai" attempts go through Chat Completions (OpenAI/Inworld/LM Studio);
+    # "anthropic" attempts use the official anthropic SDK with image blocks.
+    kind: str = "openai"
+    api_key: str = field(default="", repr=False)
 
 
 def _log_screen(text: str) -> None:
@@ -78,12 +87,20 @@ def _log_screen(text: str) -> None:
 
 
 def _get_router_client() -> AsyncOpenAI:
-    global _router_client, _router_client_api_key
-    api_key = get_inworld_api_key()
-    if _router_client is None or _router_client_api_key != api_key:
-        _router_client = create_inworld_router_client(api_key, settings.INWORLD_ROUTER_BASE_URL)
-        _router_client_api_key = api_key
-    return _router_client
+    # Imported lazily: tool_runtime imports this module, and inworld_chat
+    # imports tool_runtime — a top-level import here would close the cycle.
+    from services.inworld_chat import router_client
+
+    return router_client(get_inworld_api_key())
+
+
+def _get_openai_client() -> AsyncOpenAI:
+    global _openai_client, _openai_client_api_key
+    api_key = get_openai_api_key()
+    if _openai_client is None or _openai_client_api_key != api_key:
+        _openai_client = AsyncOpenAI(api_key=api_key)
+        _openai_client_api_key = api_key
+    return _openai_client
 
 
 def _model_supports_vision(model_id: str) -> bool:
@@ -104,7 +121,7 @@ def _selected_attempt(config: dict[str, Any]) -> tuple[VisionAttempt | None, boo
     """Build the vision attempt for the user's selected provider/model.
 
     Returns (attempt, capable). ``attempt`` is None when no client can be built
-    (e.g. Inworld provider with no API key)."""
+    (e.g. the provider's API key is missing)."""
     provider = str(config.get("provider") or "inworld").lower()
     if provider == "local":
         local = config.get("local") or {}
@@ -114,6 +131,23 @@ def _selected_attempt(config: dict[str, Any]) -> tuple[VisionAttempt | None, boo
         client = AsyncOpenAI(api_key="lm-studio", base_url=base_url)
         return VisionAttempt(f"local:{model}", client, model), capable
 
+    if provider == "openai":
+        openai_section = config.get("openai") or {}
+        model = str(openai_section.get("model") or "gpt-4o-mini").strip()
+        capable = _vision_capable("auto", model)
+        if not get_openai_api_key():
+            return None, capable
+        return VisionAttempt(f"openai:{model}", _get_openai_client(), model), capable
+
+    if provider == "anthropic":
+        anthropic_section = config.get("anthropic") or {}
+        model = str(anthropic_section.get("model") or "claude-opus-4-8").strip()
+        api_key = get_anthropic_api_key()
+        if not api_key:
+            return None, True
+        # Every current Claude model accepts images, so it is always capable.
+        return VisionAttempt(f"anthropic:{model}", None, model, kind="anthropic", api_key=api_key), True
+
     inworld = config.get("inworld") or {}
     model = str(inworld.get("model") or "deepseek-v4-flash").strip()
     capable = _vision_capable(inworld.get("vision", "auto"), model)
@@ -122,8 +156,21 @@ def _selected_attempt(config: dict[str, Any]) -> tuple[VisionAttempt | None, boo
     return VisionAttempt(f"inworld:{model}", _get_router_client(), model), capable
 
 
-def _fallback_attempt() -> VisionAttempt | None:
-    """The Inworld Router vision model (gpt-4o-mini). Needs an Inworld key."""
+def _fallback_attempt(config: dict[str, Any]) -> VisionAttempt | None:
+    """Provider-specific vision fallback.
+
+    - openai    -> gpt-4o-mini on the OpenAI API (same key)
+    - anthropic -> no fallback (the Claude model itself handles images)
+    - inworld / local -> the Inworld Router vision model (needs an Inworld key)
+    """
+    provider = str(config.get("provider") or "inworld").lower()
+    if provider == "openai":
+        if not get_openai_api_key():
+            return None
+        model = OPENAI_VISION_FALLBACK_MODEL
+        return VisionAttempt(f"openai:{model}", _get_openai_client(), model)
+    if provider == "anthropic":
+        return None
     if not get_inworld_api_key():
         return None
     model = settings.INWORLD_ROUTER_VISION_MODEL
@@ -139,7 +186,7 @@ def _resolve_vision_attempts(config: dict[str, Any]) -> list[VisionAttempt]:
       try the selected model anyway, since there is nothing to lose
     """
     selected, capable = _selected_attempt(config)
-    fallback = _fallback_attempt()
+    fallback = _fallback_attempt(config)
 
     attempts: list[VisionAttempt] = []
     if selected is not None and (capable or fallback is None):
@@ -148,12 +195,11 @@ def _resolve_vision_attempts(config: dict[str, Any]) -> list[VisionAttempt]:
         attempts.append(fallback)
 
     deduped: list[VisionAttempt] = []
-    seen: set[tuple[int, str]] = set()
+    seen: set[str] = set()
     for attempt in attempts:
-        key = (id(attempt.client), attempt.model)
-        if key in seen:
+        if attempt.label in seen:
             continue
-        seen.add(key)
+        seen.add(attempt.label)
         deduped.append(attempt)
     return deduped
 
@@ -226,6 +272,54 @@ def _vision_messages(prompt: str, screenshot: Screenshot) -> list[dict[str, Any]
     ]
 
 
+async def _run_vision_attempt(
+    attempt: VisionAttempt,
+    messages: list[dict[str, Any]],
+    prompt: str,
+    screenshot: Screenshot,
+) -> str:
+    """Run one vision attempt and return the analysis text (may be empty)."""
+    if attempt.kind == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=attempt.api_key)
+        try:
+            response = await client.messages.create(
+                model=attempt.model,
+                max_tokens=VISION_MAX_TOKENS,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": screenshot.mime_type,
+                                "data": screenshot.data_base64,
+                            },
+                        },
+                        {"type": "text", "text": prompt},
+                    ],
+                }],
+            )
+        finally:
+            await client.close()
+        parts = [
+            getattr(block, "text", "") or ""
+            for block in response.content
+            if getattr(block, "type", None) == "text"
+        ]
+        return " ".join(part.strip() for part in parts if part.strip()).strip()
+
+    response = await attempt.client.chat.completions.create(
+        model=attempt.model,
+        messages=messages,
+        max_tokens=VISION_MAX_TOKENS,
+        temperature=VISION_TEMPERATURE,
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
 async def analyze_screen(
     question: str = "",
     user_request: str = "",
@@ -243,9 +337,9 @@ async def analyze_screen(
     attempts = _resolve_vision_attempts(config)
     if not attempts:
         message = (
-            "No vision-capable model is available. Select a vision-capable model for the active "
-            "provider (or set its vision option to 'on'), or configure an Inworld API key to use "
-            "the gpt-4o-mini fallback."
+            "No vision-capable model is available. Check that the active LLM provider's API key "
+            "is saved, select a vision-capable model (or set its vision option to 'on'), or "
+            "configure an Inworld API key to use the gpt-4o-mini router fallback."
         )
         _log_screen("no vision-capable model available")
         return {"ok": False, "error": message, "answer": "I do not have a model that can see the screen right now."}
@@ -266,13 +360,7 @@ async def analyze_screen(
     last_error = ""
     for attempt in attempts:
         try:
-            response = await attempt.client.chat.completions.create(
-                model=attempt.model,
-                messages=messages,
-                max_tokens=VISION_MAX_TOKENS,
-                temperature=VISION_TEMPERATURE,
-            )
-            analysis = (response.choices[0].message.content or "").strip()
+            analysis = await _run_vision_attempt(attempt, messages, prompt, screenshot)
             if not analysis:
                 last_error = f"{attempt.label} returned an empty response"
                 _log_screen(last_error)

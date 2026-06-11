@@ -126,13 +126,17 @@ async def preload_whisper(model_name: str, language_code: str) -> None:
 
 
 async def preload_configured_whisper(config: dict[str, Any]) -> None:
+    # Whisper is the only STT in BitMon, regardless of the LLM provider
+    # (inworld/local/openai/anthropic), so preload for all of them. The global
+    # whisper/speech sections are the source of truth; the provider section is
+    # only a legacy fallback.
     provider = str(config.get("provider") or "inworld").lower()
-    section = config.get(provider) or config.get("inworld") or {}
-    if str(section.get("stt_provider") or provider).lower() != "whisper":
-        return
+    section = config.get(provider) if isinstance(config.get(provider), dict) else {}
+    whisper_section = config.get("whisper") or {}
+    speech_section = config.get("speech") or {}
     await preload_whisper(
-        str(section.get("whisper_model") or "base"),
-        str(section.get("stt_language") or "pt"),
+        str(whisper_section.get("model") or section.get("whisper_model") or "base"),
+        str(speech_section.get("stt_language") or section.get("stt_language") or "pt"),
     )
 
 

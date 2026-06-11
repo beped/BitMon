@@ -678,6 +678,32 @@
       padding: 7px 8px;
       font-size: 12px;
     }
+    .answers-toolbar {
+      grid-template-columns: 1fr auto;
+    }
+    .answer-row {
+      display: grid;
+      grid-template-columns: 34px minmax(120px, .45fr) 2fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .answer-row:last-child {
+      border-bottom: 0;
+    }
+    .answer-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+    .answer-row input, .answer-row select {
+      padding: 7px 8px;
+      font-size: 12px;
+    }
+    .answer-row.answer-off input:not([type="checkbox"]), .answer-row.answer-off select {
+      opacity: .45;
+    }
     .mcp-row {
       display: grid;
       grid-template-columns: 34px minmax(120px, .7fr) minmax(220px, 1.2fr) minmax(120px, .55fr) minmax(180px, .8fr) minmax(220px, 1fr) auto;
@@ -1335,7 +1361,7 @@
       .badge { display: inline-block; margin-top: 8px; }
       .tabs { overflow-x: auto; }
       .grid, .toggle-grid { grid-template-columns: 1fr; }
-      .device-toolbar, .device-row, .mcp-row, .persona-picker, .persona-name-control, .persona-files-grid, .persona-row, .persona-workspace, .persona-editor, .persona-edit-grid, .persona-asset-list { grid-template-columns: 1fr; }
+      .device-toolbar, .device-row, .answer-row, .mcp-row, .persona-picker, .persona-name-control, .persona-files-grid, .persona-row, .persona-workspace, .persona-editor, .persona-edit-grid, .persona-asset-list { grid-template-columns: 1fr; }
       .theme-workspace { grid-template-columns: 1fr; }
       .theme-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .persona-workspace { height: auto; }
@@ -1373,6 +1399,7 @@
       <button class="tab" type="button" data-tab="themes"><span data-i18n="tabs.themes">Themes</span></button>
       <button class="tab" type="button" data-tab="mcps"><span data-i18n="tabs.mcps">MCPs</span></button>
       <button class="tab" type="button" data-tab="devices" id="devices-tab" hidden><span data-i18n="tabs.devices">Devices</span></button>
+      <button class="tab" type="button" data-tab="answers" id="answers-tab" hidden><span data-i18n="tabs.answers">Answers</span></button>
       <button class="tab" type="button" data-tab="debug"><span data-i18n="tabs.debug">Debug</span></button>
     </nav>
 
@@ -1422,14 +1449,17 @@
               <label><span data-i18n="fields.llmProvider">LLM provider</span>
                 <select name="llm.provider" id="llm-provider-select">
                   <option value="inworld">Inworld</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Claude (Anthropic)</option>
                   <option value="local">LM Studio</option>
                 </select>
               </label>
+              <div></div>
+            </div>
+            <div class="grid" id="llm-inworld-fields">
               <label><span data-i18n="fields.inworldApiKey">Inworld API key</span>
                 <input name="secrets.inworld_api_key" id="inworld-api-key" type="password" autocomplete="new-password" data-i18n-placeholder="placeholders.keepCurrentKey" placeholder="Leave blank to keep the current key" />
               </label>
-            </div>
-            <div class="grid" id="llm-inworld-fields">
               <label><span data-i18n="fields.llmModel">LLM model</span>
                 <input name="inworld.model" autocomplete="off" />
               </label>
@@ -1442,6 +1472,28 @@
                   <option value="on" data-i18n="vision.on">On (model accepts images)</option>
                   <option value="off" data-i18n="vision.off">Off (use gpt-4o-mini)</option>
                 </select>
+              </label>
+            </div>
+            <div class="grid" id="llm-openai-fields" hidden>
+              <label><span data-i18n="fields.openaiApiKey">OpenAI API key</span>
+                <input name="secrets.openai_api_key" type="password" autocomplete="new-password" data-i18n-placeholder="placeholders.keepCurrentKey" placeholder="Leave blank to keep the current key" />
+              </label>
+              <label><span data-i18n="fields.llmModel">LLM model</span>
+                <input name="openai.model" autocomplete="off" placeholder="gpt-4o-mini" />
+              </label>
+              <label><span data-i18n="fields.maxTokens">Max tokens</span>
+                <input name="openai.max_tokens" type="number" min="32" max="4096" step="1" />
+              </label>
+            </div>
+            <div class="grid" id="llm-anthropic-fields" hidden>
+              <label><span data-i18n="fields.anthropicApiKey">Anthropic API key</span>
+                <input name="secrets.anthropic_api_key" type="password" autocomplete="new-password" data-i18n-placeholder="placeholders.keepCurrentKey" placeholder="Leave blank to keep the current key" />
+              </label>
+              <label><span data-i18n="fields.llmModel">LLM model</span>
+                <input name="anthropic.model" autocomplete="off" placeholder="claude-opus-4-8" />
+              </label>
+              <label><span data-i18n="fields.maxTokens">Max tokens</span>
+                <input name="anthropic.max_tokens" type="number" min="32" max="4096" step="1" />
               </label>
             </div>
             <div class="grid" id="llm-local-fields" hidden>
@@ -1490,7 +1542,9 @@
               <label><span data-i18n="fields.inworldVoice">Inworld voice</span>
                 <input name="inworld.voice" autocomplete="off" />
               </label>
-              <div></div>
+              <label id="tts-inworld-key-field"><span data-i18n="fields.inworldApiKey">Inworld API key</span>
+                <input name="secrets.inworld_api_key" type="password" autocomplete="new-password" data-i18n-placeholder="placeholders.keepCurrentKey" placeholder="Leave blank to keep the current key" />
+              </label>
             </div>
             <div class="grid" id="tts-kokoro-fields" hidden>
               <label><span data-i18n="fields.kokoroModel">Kokoro model</span>
@@ -1992,6 +2046,15 @@
           </div>
         </div>
       </section>
+
+      <section class="panel" data-panel="answers">
+        <div class="device-toolbar answers-toolbar">
+          <span class="persona-meta" id="answers-summary" data-i18n="sections.answers.hint">Spoken confirmations for direct smart home commands</span>
+          <button class="action" type="button" id="answers-add" data-i18n="actions.addAnswer">Add answer</button>
+        </div>
+        <div class="hint" data-i18n="answers.hint">Only the answers for the STT language (Model tab) are listed. One of the enabled answers is spoken at random after a direct turn on/off command; if all are off, the built-in defaults are used. Saved with the configuration.</div>
+        <div class="device-list" id="answers-list"></div>
+      </section>
     </form>
 
     <div class="actions">
@@ -2079,9 +2142,12 @@
     const llmProviderSelect = document.querySelector("#llm-provider-select");
     const ttsProviderSelect = document.querySelector("#tts-provider-select");
     const llmInworldFields = document.querySelector("#llm-inworld-fields");
+    const llmOpenAiFields = document.querySelector("#llm-openai-fields");
+    const llmAnthropicFields = document.querySelector("#llm-anthropic-fields");
     const llmLocalFields = document.querySelector("#llm-local-fields");
     const ttsSection = document.querySelector("#tts-section");
     const ttsInworldFields = document.querySelector("#tts-inworld-fields");
+    const ttsInworldKeyField = document.querySelector("#tts-inworld-key-field");
     const ttsKokoroFields = document.querySelector("#tts-kokoro-fields");
     const whisperHotkeyField = document.querySelector("#whisper-hotkey-field");
     const whisperHotkeyInput = document.querySelector("#whisper-hotkey-input");
@@ -2104,6 +2170,10 @@
     const mcpServerList = document.querySelector("#mcp-server-list");
     const mcpStatus = document.querySelector("#mcp-status");
     const devicesTab = document.querySelector("#devices-tab");
+    const answersTab = document.querySelector("#answers-tab");
+    const answersList = document.querySelector("#answers-list");
+    const answersSummary = document.querySelector("#answers-summary");
+    const answersAdd = document.querySelector("#answers-add");
     const devicesList = document.querySelector("#devices-list");
     const devicesFilter = document.querySelector("#devices-filter");
     const devicesToggleAll = document.querySelector("#devices-toggle-all");
@@ -2152,6 +2222,7 @@
     const personaEditIdleAfterField = document.querySelector("#persona-edit-idle-after-field");
     let devices = [];
     let devicesDirty = false;
+    let haAnswers = [];
     let mcpServers = [];
     let personaLibrary = {active: "", personas: []};
     let personaConfig = null;
@@ -2162,6 +2233,10 @@
     let personaPreviewImage = new Image();
     let personaPreviewImageFile = "";
     let personaSheetSignature = "";
+    // Cache-buster for /persona/assets URLs. Personas reuse the same file
+    // names (idle_1.webp, ...), so without a fresh token the browser keeps
+    // showing the previous persona's cached sprites after a switch.
+    let personaAssetsVersion = Date.now();
     let audioContext = null;
     let micStream = null;
     let analyser = null;
@@ -2227,6 +2302,7 @@
       updateMeterUi(lastMeterRms);
       renderMcpServers();
       if (devices.length) renderDevices();
+      renderAnswers();
       renderPersonaLibrary();
       if (personaConfig) renderPersonaAnimations();
       if (themeConfig) renderThemeEditor();
@@ -2396,7 +2472,9 @@
     function syncDevicesTabVisibility() {
       const visible = Boolean(haEnabledInput?.checked);
       devicesTab.hidden = !visible;
-      if (!visible && devicesTab.classList.contains("active")) setActiveTab("mcps");
+      answersTab.hidden = !visible;
+      const hiddenTabActive = devicesTab.classList.contains("active") || answersTab.classList.contains("active");
+      if (!visible && hiddenTabActive) setActiveTab("mcps");
       if (visible && devices.length === 0) loadDevices().catch((err) => {
         setText(devicesSummary, "status.devicesLoadError", {error: err.message});
       });
@@ -2408,10 +2486,15 @@
       const ttsProvider = ttsProviderSelect.value || "inworld";
       const voiceEnabled = Boolean(voiceResponseToggle.checked);
       llmInworldFields.hidden = llmProvider !== "inworld";
+      llmOpenAiFields.hidden = llmProvider !== "openai";
+      llmAnthropicFields.hidden = llmProvider !== "anthropic";
       llmLocalFields.hidden = llmProvider !== "local";
       ttsSection.hidden = !voiceEnabled;
       ttsInworldFields.hidden = !voiceEnabled || ttsProvider !== "inworld";
       ttsKokoroFields.hidden = !voiceEnabled || ttsProvider !== "kokoro";
+      // The Inworld API key lives in the LLM section when the LLM is Inworld;
+      // otherwise it shows next to the Inworld TTS fields (never in both).
+      ttsInworldKeyField.hidden = llmProvider === "inworld";
       whisperHotkeyField.hidden = false;
     }
 
@@ -2510,6 +2593,10 @@
         const option = document.createElement("option");
         option.value = model.value;
         option.textContent = model.type === "file" ? `${model.label} (${model.path})` : model.label;
+        if (model.disabled) {
+          option.disabled = true;
+          option.textContent += ` — ${t("wakeword.needsOnnx")}`;
+        }
         wakeWordModelSelect.appendChild(option);
       }
       ensureSelectValue(wakeWordModelSelect, selectedValue || "builtin:hey_jarvis");
@@ -3074,6 +3161,86 @@
     }
 
 
+    function answersLanguage() {
+      // The Answers tab only shows (and creates) answers for the language the
+      // user speaks, taken from the STT language field in the Model tab.
+      return String(form.elements["speech.stt_language"]?.value || "pt").slice(0, 2).toLowerCase();
+    }
+
+    function filteredAnswerIndexes() {
+      const lang = answersLanguage();
+      return haAnswers
+        .map((_, index) => index)
+        .filter((index) => String(haAnswers[index].language || "en").slice(0, 2).toLowerCase() === lang);
+    }
+
+    function renderAnswers() {
+      if (!answersList) return;
+      const visibleIndexes = filteredAnswerIndexes();
+      setText(answersSummary, "status.answersSummary", {
+        language: answersLanguage().toUpperCase(),
+        total: visibleIndexes.length,
+        enabled: visibleIndexes.filter((index) => haAnswers[index].enabled !== false).length,
+      });
+      answersList.innerHTML = `
+        <div class="answer-row device-head">
+          <div>${escapeHtml(t("answers.columns.use"))}</div>
+          <div>${escapeHtml(t("answers.columns.action"))}</div>
+          <div>${escapeHtml(t("answers.columns.text"))}</div>
+          <div></div>
+        </div>
+      `;
+      visibleIndexes.forEach((index) => {
+        const answer = haAnswers[index];
+        const enabled = answer.enabled !== false;
+        const row = document.createElement("div");
+        row.className = `answer-row${enabled ? "" : " answer-off"}`;
+        row.innerHTML = `
+          <input data-answer-enabled="${index}" type="checkbox" ${enabled ? "checked" : ""} title="${escapeHtml(t("answers.enableTitle"))}" />
+          <select data-answer-action="${index}">
+            <option value="turn_on" ${answer.action !== "turn_off" ? "selected" : ""}>${escapeHtml(t("answers.actionOn"))}</option>
+            <option value="turn_off" ${answer.action === "turn_off" ? "selected" : ""}>${escapeHtml(t("answers.actionOff"))}</option>
+          </select>
+          <input data-answer-text="${index}" value="${escapeHtml(answer.text || "")}" placeholder="${escapeHtml(t("placeholders.answerText"))}" />
+          <button class="action danger" type="button" data-answer-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
+        `;
+        answersList.appendChild(row);
+      });
+    }
+
+    function addAnswerRow() {
+      haAnswers.push({
+        id: `answer_${Date.now()}`,
+        language: answersLanguage(),
+        action: "turn_on",
+        text: "",
+        enabled: true,
+      });
+      renderAnswers();
+      answersList.querySelector(`[data-answer-text="${haAnswers.length - 1}"]`)?.focus();
+      setStatus("status.answersPending");
+    }
+
+    function answerAction(answer) {
+      return answer.action === "turn_off" ? "turn_off" : "turn_on";
+    }
+
+    function isLastEnabledAnswer(index) {
+      // Each action (turn on / turn off) must keep at least one enabled
+      // answer in its language, so the pet always has a confirmation to speak.
+      const answer = haAnswers[index];
+      if (answer.enabled === false) return false;
+      const language = String(answer.language || "en").slice(0, 2).toLowerCase();
+      const action = answerAction(answer);
+      // Empty-text answers don't count: they are dropped on save.
+      return !haAnswers.some((other, otherIndex) =>
+        otherIndex !== index
+        && other.enabled !== false
+        && String(other.text || "").trim()
+        && String(other.language || "en").slice(0, 2).toLowerCase() === language
+        && answerAction(other) === action);
+    }
+
     function renderPersonaLibrary(preferId) {
       if (!personaLibrarySelect) return;
       const personas = personaLibrary.personas || [];
@@ -3169,6 +3336,9 @@
       personaEditingIndex = 0;
       personaPreviewImageFile = "";
       personaSheetSignature = "";
+      // New token on every editor load: switching the edited persona swaps
+      // the files behind the same URLs, so cached images must be refetched.
+      personaAssetsVersion = Date.now();
       renderPersonaAnimations();
       renderPersonaAssets();
       renderThemeEditor();
@@ -3408,7 +3578,7 @@
     }
 
     function personaAssetUrl(file) {
-      return `/persona/assets/${encodeURIComponent(file)}`;
+      return `/persona/assets/${encodeURIComponent(file)}?v=${personaAssetsVersion}`;
     }
 
     function renderPersonaAssets() {
@@ -3712,15 +3882,18 @@
       const frame = personaPreviewFrame % usedFrames;
       const col = frame % columns;
       const row = Math.floor(frame / columns);
-      if (personaPreviewImageFile !== animation.file) {
-        personaPreviewImageFile = animation.file;
+      // Track the full versioned URL: the same file name must reload when the
+      // asset version changes (persona switch, re-upload over the same name).
+      const imageSrc = personaAssetUrl(animation.file);
+      if (personaPreviewImageFile !== imageSrc) {
+        personaPreviewImageFile = imageSrc;
         personaSheetSignature = "";
         personaPreviewImage = new Image();
         personaPreviewImage.onload = () => {
           drawPersonaSheetPreview();
           drawPersonaPreviewFrame();
         };
-        personaPreviewImage.src = personaAssetUrl(animation.file);
+        personaPreviewImage.src = imageSrc;
         return;
       }
       if (!personaPreviewImage.complete || personaPreviewImage.naturalWidth === 0) return;
@@ -4199,6 +4372,9 @@
       personaAssets = personaAssets.filter((item) => item.name !== asset.name || item.type !== asset.type);
       personaAssets.push(asset);
       personaAssets.sort((a, b) => a.name.localeCompare(b.name));
+      // Re-uploading over an existing name keeps the URL; bump the version so
+      // thumbnails and the preview pick up the new image.
+      personaAssetsVersion = Date.now();
       renderPersonaAnimations();
       renderPersonaAssets();
       await loadPersonaLibrary();
@@ -4219,6 +4395,10 @@
       }
       mcpServers = Array.isArray(getPath(config, "mcps.servers")) ? getPath(config, "mcps.servers").map((server) => ({...server})) : [];
       renderMcpServers();
+      haAnswers = Array.isArray(getPath(config, "mcps.home_assistant.answers"))
+        ? getPath(config, "mcps.home_assistant.answers").map((answer) => ({...answer}))
+        : [];
+      renderAnswers();
       whisperHotkeyInput.value = hotkeyListToText(getPath(config, "microphone.whisper_hotkeys") || getPath(config, "microphone.whisper_hotkey") || "f8");
       renderWakeWordModels(getPath(config, "wake_word.selected_model") || "builtin:hey_jarvis");
       ensureSelectValue(llmProviderSelect, getPath(config, "llm.provider") || getPath(config, "provider") || "inworld");
@@ -4271,6 +4451,13 @@
         setPath(config, "wake_word.model_names", [selectedWakeWord.replace(/^builtin:/, "")]);
         setPath(config, "wake_word.model_paths", []);
       }
+      setPath(config, "mcps.home_assistant.answers", haAnswers.map((answer) => ({
+        id: String(answer.id || ""),
+        language: String(answer.language || "en"),
+        action: answer.action === "turn_off" ? "turn_off" : "turn_on",
+        text: String(answer.text || "").trim(),
+        enabled: answer.enabled !== false,
+      })).filter((answer) => answer.text));
       ensureMcpServerIds();
       setPath(config, "mcps.servers", mcpServers.map((server) => ({
         id: normalizeMcpId(server.id || server.name, "mcp_server"),
@@ -4490,6 +4677,54 @@
       renderDevices();
       setText(devicesSummary, "status.deviceRemoved");
       notify("status.deviceRemoved", "info");
+    });
+    document.querySelector('[name="speech.stt_language"]')?.addEventListener("change", renderAnswers);
+    answersAdd.addEventListener("click", addAnswerRow);
+    answersList.addEventListener("input", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.dataset.answerText === undefined) return;
+      haAnswers[Number(target.dataset.answerText)].text = target.value;
+      setStatus("status.answersPending");
+    });
+    answersList.addEventListener("change", (event) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement && target.dataset.answerEnabled !== undefined) {
+        const index = Number(target.dataset.answerEnabled);
+        if (!target.checked && isLastEnabledAnswer(index)) {
+          target.checked = true;
+          notify("status.answerMustStayOn", "warning");
+          return;
+        }
+        haAnswers[index].enabled = target.checked;
+        renderAnswers();
+        setStatus("status.answersPending");
+        return;
+      }
+      if (!(target instanceof HTMLSelectElement) || target.dataset.answerAction === undefined) return;
+      const index = Number(target.dataset.answerAction);
+      // Moving the last enabled answer to the other action would leave the
+      // current action without any enabled confirmation.
+      if (target.value !== answerAction(haAnswers[index]) && isLastEnabledAnswer(index)) {
+        notify("status.answerMustStayOn", "warning");
+        renderAnswers();
+        return;
+      }
+      haAnswers[index].action = target.value;
+      renderAnswers();
+      setStatus("status.answersPending");
+    });
+    answersList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-answer-delete]");
+      if (!button) return;
+      const index = Number(button.dataset.answerDelete);
+      if (isLastEnabledAnswer(index)) {
+        notify("status.answerMustStayOn", "warning");
+        return;
+      }
+      haAnswers.splice(index, 1);
+      renderAnswers();
+      setStatus("status.answersPending");
+      notify("status.answerRemoved", "info");
     });
     personaLibrarySelect.addEventListener("change", () => {
       renderPersonaLibrary();

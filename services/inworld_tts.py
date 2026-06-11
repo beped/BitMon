@@ -11,7 +11,7 @@ import httpx
 import numpy as np
 
 from core.config import get_inworld_api_key, settings
-from services.inworld_auth import inworld_authorization_header
+from services.inworld_chat import inworld_basic_header
 
 
 TARGET_SAMPLE_RATE = 24000
@@ -100,7 +100,7 @@ async def synthesize_inworld_pcm16(
         response = await client.post(
             INWORLD_TTS_URL,
             headers={
-                "Authorization": inworld_authorization_header(api_key),
+                "Authorization": inworld_basic_header(api_key),
                 "Content-Type": "application/json",
             },
             json=payload,

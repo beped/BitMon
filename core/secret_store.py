@@ -9,6 +9,8 @@ from typing import Any
 SERVICE_NAME = "BitMon"
 LEGACY_SERVICE_NAME = "Digi" + "Mon"
 INWORLD_API_KEY_SECRET = "inworld_api_key"
+OPENAI_API_KEY_SECRET = "openai_api_key"
+ANTHROPIC_API_KEY_SECRET = "anthropic_api_key"
 
 
 class SecretStoreError(RuntimeError):

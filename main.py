@@ -51,7 +51,8 @@ from persona.theme_config import (
 from services.mcp_external import validate_home_assistant_mcp, validate_streamable_http_mcp
 from services.sprite_optimizer import optimize_persona_sprites
 from services.chat_bus import broadcast_clear, clear_history, get_history, has_active_session, inject_text
-from services.inworld_chat import inworld_chat_proxy
+from services.chat_session import chat_session_proxy
+from services.llm_bridge import select_llm
 from services.input_capture import (
     cancel_hotkey_capture,
     get_hotkey_capture_result,
@@ -365,7 +366,6 @@ async def api_save_config(config: dict[str, Any]):
     except (ConfigValidationError, SecretStoreError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     provider = str(saved.get("provider") or "inworld").lower()
-    provider_section = saved.get(provider) or saved.get("inworld") or {}
     if provider == "local":
         async def preload_saved_local() -> None:
             try:
@@ -374,7 +374,8 @@ async def api_save_config(config: dict[str, Any]):
                 _record_error("[Preload] failed to load Local", exc)
 
         asyncio.create_task(preload_saved_local())
-    elif str(provider_section.get("stt_provider") or provider).lower() == "whisper":
+    else:
+        # Whisper is the STT for every cloud provider (inworld/openai/anthropic).
         async def preload_saved_whisper() -> None:
             try:
                 await preload_configured_whisper(saved)
@@ -761,14 +762,29 @@ async def api_wake_word_models():
     except Exception:
         builtins = []
 
+    # openwakeword runs .tflite models only through tflite_runtime, which is
+    # generally unavailable on Windows — this install uses onnxruntime. List
+    # .tflite files anyway (marked unsupported) so they don't vanish silently.
+    try:
+        import tflite_runtime  # noqa: F401
+
+        tflite_ok = True
+    except Exception:
+        tflite_ok = False
+
     files = []
-    for path in sorted(WAKEWORD_DIR.glob("*.onnx")):
-        files.append({
+    model_paths = list(WAKEWORD_DIR.glob("*.onnx")) + list(WAKEWORD_DIR.glob("*.tflite"))
+    for path in sorted(model_paths, key=lambda item: item.name.lower()):
+        entry = {
             "value": f"file:{path.name}",
             "label": path.stem.replace("_", " ").title(),
             "type": "file",
             "path": f"wakeword/{path.name}",
-        })
+        }
+        if path.suffix.lower() == ".tflite" and not tflite_ok:
+            entry["disabled"] = True
+            entry["reason"] = "tflite_unsupported"
+        files.append(entry)
     return {"models": builtins + files}
 
 
@@ -808,15 +824,14 @@ async def session(ws: WebSocket):
     model = ws.query_params.get("model") or None
     name = ws.query_params.get("name") or None
     config = get_config()
-    provider = str(config.get("llm", {}).get("provider") or config.get("provider") or "inworld").lower()
+    selection = select_llm(config)
     tts = config.get("tts") or {}
     tts_provider = str(tts.get("provider") or "inworld").lower() if bool(tts.get("enabled", True)) else "off"
-    if provider == "local":
-        print(f"[VoiceFlow] mode=normal stt=whisper llm=local tts={tts_provider}")
+    print(f"[VoiceFlow] mode=normal stt=whisper llm={selection.label} tts={tts_provider}")
+    if selection.provider == "local":
         await local_session_proxy(ws, voice=voice, prompt=prompt, model=model, name=name)
     else:
-        print(f"[VoiceFlow] mode=normal stt=whisper llm=inworld-router tts={tts_provider}")
-        await inworld_chat_proxy(ws)
+        await chat_session_proxy(ws)
 
 
 if __name__ == "__main__":

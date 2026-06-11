@@ -30,6 +30,14 @@
     "tts_language": "en",
     "vision": "auto"
   },
+  "openai": {
+    "model": "gpt-4o-mini",
+    "max_tokens": 300
+  },
+  "anthropic": {
+    "model": "claude-opus-4-8",
+    "max_tokens": 300
+  },
   "local": {
     "base_url": "http://127.0.0.1:1234/v1",
     "model": "local-model",
@@ -88,7 +96,9 @@
     "locale": "en-US"
   },
   "secrets": {
-    "inworld_api_key_configured": false
+    "inworld_api_key_configured": false,
+    "openai_api_key_configured": false,
+    "anthropic_api_key_configured": false
   },
   "mcps": {
     "home_assistant": {

@@ -1422,14 +1422,25 @@ class OverlayWindow(QWidget):
     def _reload_runtime_state(self) -> None:
         self._refresh_file_watcher_paths()
         try:
-            client_config = fetch_client_config(timeout=0.35)
+            client_config = fetch_client_config(timeout=1.5)
         except Exception:
             client_config = None
         if isinstance(client_config, dict):
+            self._config_refetch_attempts = 0
             merged_client = merge_client_config(client_config)
             signature = stable_signature(merged_client)
             if signature != self.config_signature:
                 self._apply_client_config(merged_client)
+        else:
+            # The backend was busy or unreachable (e.g. reloading Whisper right
+            # after a config save). Without a retry the new config would be
+            # silently dropped until the next file event — keep retrying so
+            # hotkeys/wake word changes always land without a restart.
+            attempts = getattr(self, "_config_refetch_attempts", 0)
+            if attempts < 10:
+                self._config_refetch_attempts = attempts + 1
+                print(f"[Config] backend busy, retrying live reload ({self._config_refetch_attempts}/10)")
+                self.reload_debounce_timer.start(1500)
 
         persona_config = load_persona_config()
         persona_signature = stable_signature(persona_config)
@@ -1506,6 +1517,11 @@ class OverlayWindow(QWidget):
         if old_wake_signature != new_wake_signature or old_vad != new_vad:
             self.wake_word_listener.stop()
             self.wake_word_listener = self._build_wake_word_listener(self.config)
+            models = self.wake_word_listener.model_paths or self.wake_word_listener.model_names
+            print(
+                f"[WakeWord] config reloaded enabled={self.wake_word_listener.enabled} "
+                f"models={[Path(str(m)).name for m in models]}"
+            )
 
         self.audio_input.update_settings(
             gain=float(self.config.get("mic_gain", 10.0)),

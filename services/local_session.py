@@ -10,20 +10,21 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
-from openai import AsyncOpenAI
 
 from core.config import settings
 from core.config_store import get_config
 from core.security import redact_for_log
+from services import local_chat
 from services.chat_bus import append_message, register_session, unregister_session
-from services.inworld_tts import synthesize_inworld_pcm16
+from services.inworld_tts import INWORLD_TTS_MODEL, synthesize_inworld_pcm16
+from services.tts_cache import synthesize_cached
 from services.tool_runtime import (
     TOOL_INSTRUCTIONS,
-    create_chat_completion_with_tools,
     get_chat_tools,
     get_session_tools,
 )
 from services.tts_service import synthesize_pcm16
+from services.voice_intents import try_direct_smart_home_intent
 from services.wake_phrase import strip_configured_wake_phrase
 from services.whisper_service import transcribe_pcm16
 
@@ -152,7 +153,6 @@ async def local_session_proxy(
     response_lock = asyncio.Lock()
     history: list[dict[str, Any]] = [{"role": "system", "content": _system_prompt(config, local_cfg, prompt, name)}]
     active_config_signature = _config_signature(config)
-    client = AsyncOpenAI(api_key="lm-studio", base_url=base_url)
 
     _log_system(
         "session opened "
@@ -164,7 +164,8 @@ async def local_session_proxy(
     await client_ws.send_text(json.dumps({"type": "session.created"}))
     await client_ws.send_text(json.dumps({"type": "session.updated"}))
 
-    async def generate_text(user_text: str) -> str:
+    async def generate_text(user_text: str) -> tuple[str, bool]:
+        """Return (answer, from_intent); intent answers have cacheable TTS."""
         nonlocal active_config_signature, history
         config_now = get_config()
         next_config_signature = _config_signature(config_now)
@@ -180,16 +181,27 @@ async def local_session_proxy(
         history[0] = {"role": "system", "content": _system_prompt(config_now, local_now, prompt, name)}
 
         history.append({"role": "user", "content": user_text})
+        # Deterministic fast path: direct on/off commands matching an enabled
+        # Home Assistant device are executed without the LLM.
+        try:
+            direct_answer = await try_direct_smart_home_intent(user_text, config_now)
+        except Exception as exc:
+            _log_error(f"direct intent fallback: {exc}")
+            direct_answer = None
+        if direct_answer is not None:
+            history.append({"role": "assistant", "content": direct_answer})
+            _log_system("direct intent handled without LLM")
+            return direct_answer, True
         limited_history = [history[0]] + history[1:][-12:]
         started = time.perf_counter()
-        answer, tool_names = await create_chat_completion_with_tools(
-            client,
+        answer, tool_names = await local_chat.complete(
+            str(local_now.get("base_url") or base_url),
             model=str(current_model),
             messages=limited_history,
             tools=get_chat_tools(config_now),
             user_request=user_text,
-            temperature=current_temperature,
             max_tokens=current_max_tokens,
+            temperature=current_temperature,
         )
         elapsed = time.perf_counter() - started
         history.append({"role": "assistant", "content": answer})
@@ -197,7 +209,7 @@ async def local_session_proxy(
             _log_system(f"LM Studio tools={','.join(tool_names)} responded in {elapsed:.2f}s")
         else:
             _log_system(f"LM Studio responded in {elapsed:.2f}s")
-        return answer
+        return answer, False
 
     async def send_response(user_text: str) -> None:
         user_text = " ".join(str(user_text or "").split())
@@ -213,8 +225,9 @@ async def local_session_proxy(
             await client_ws.send_text(json.dumps({
                 "type": "response.created",
             }))
+            cacheable_answer = False
             try:
-                answer = await generate_text(user_text)
+                answer, cacheable_answer = await generate_text(user_text)
             except Exception as exc:
                 _log_error(f"Local LLM/tool: {exc}")
                 await client_ws.send_text(json.dumps({"type": "error", "error": str(exc)}))
@@ -244,12 +257,23 @@ async def local_session_proxy(
 
             if voice_response_now and tts_provider_now == "kokoro":
                 try:
-                    pcm = await synthesize_pcm16(
-                        answer,
-                        lang_code=kokoro_lang_now,
-                        voice=kokoro_voice_now,
-                        model_id=kokoro_model_now,
-                        speed=kokoro_speed_now,
+                    pcm = await synthesize_cached(
+                        {
+                            "provider": "kokoro",
+                            "model": kokoro_model_now,
+                            "voice": kokoro_voice_now,
+                            "language": kokoro_lang_now,
+                            "speed": kokoro_speed_now,
+                            "text": answer,
+                        },
+                        lambda: synthesize_pcm16(
+                            answer,
+                            lang_code=kokoro_lang_now,
+                            voice=kokoro_voice_now,
+                            model_id=kokoro_model_now,
+                            speed=kokoro_speed_now,
+                        ),
+                        enabled=cacheable_answer,
                     )
                 except Exception as exc:
                     _log_error(f"Kokoro: {exc}")
@@ -265,11 +289,23 @@ async def local_session_proxy(
                     }))
                     await asyncio.sleep(0)
             elif voice_response_now and tts_provider_now == "inworld":
+                inworld_voice_now = str(inworld_now.get("voice") or settings.INWORLD_VOICE)
+                inworld_language_now = str(speech_now.get("tts_language") or inworld_now.get("tts_language") or "en")
                 try:
-                    pcm = await synthesize_inworld_pcm16(
-                        answer,
-                        voice_id=str(inworld_now.get("voice") or settings.INWORLD_VOICE),
-                        language_code=str(speech_now.get("tts_language") or inworld_now.get("tts_language") or "en"),
+                    pcm = await synthesize_cached(
+                        {
+                            "provider": "inworld",
+                            "model": INWORLD_TTS_MODEL,
+                            "voice": inworld_voice_now,
+                            "language": inworld_language_now,
+                            "text": answer,
+                        },
+                        lambda: synthesize_inworld_pcm16(
+                            answer,
+                            voice_id=inworld_voice_now,
+                            language_code=inworld_language_now,
+                        ),
+                        enabled=cacheable_answer,
                     )
                 except Exception as exc:
                     _log_error(f"Inworld TTS: {exc}")
