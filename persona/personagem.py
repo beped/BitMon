@@ -785,6 +785,7 @@ class OverlayWindow(QWidget):
         self.show_user_subtitle = bool(self.config.get("debug_user_subtitle", True))
         self.character_name = str(self.config.get("character_name", "") or "").strip()
         self.mic_active = False
+        self._mic_icon_cache: dict[str, QIcon] = {}
         self.talking = False
         self.response_audio_done = True
         self._output_device_synced = False
@@ -1038,8 +1039,37 @@ class OverlayWindow(QWidget):
         return self._mic_button_style(color, _lighten(color, 0.15))
 
     def _mic_recording_style(self) -> str:
-        # Recording is a state indicator, not part of the theme: always green.
-        return self._mic_button_style("#16a34a", "#45d17a")
+        color = str(self._theme()["input"].get("mic_recording_color") or "#16a34a")
+        return self._mic_button_style(color, _lighten(color, 0.15))
+
+    def _mic_icon(self, color: str) -> QIcon:
+        """mic.svg tinted with the theme color (the file itself is white)."""
+        cached = self._mic_icon_cache.get(color)
+        if cached is not None:
+            return cached
+        try:
+            svg = (ICONS_DIR / "mic.svg").read_text(encoding="utf-8")
+            # Render at 64px so QIcon downscales crisply to the 20px icon size.
+            svg = svg.replace("<svg ", '<svg width="64" height="64" ', 1)
+            svg = svg.replace('"white"', f'"{color}"')
+            pixmap = QPixmap()
+            if not pixmap.loadFromData(svg.encode("utf-8"), "SVG"):
+                raise ValueError("SVG render failed")
+            icon = QIcon(pixmap)
+        except (OSError, ValueError):
+            icon = QIcon(str(ICONS_DIR / "mic.svg"))
+        self._mic_icon_cache[color] = icon
+        return icon
+
+    def _apply_mic_style(self, recording: bool) -> None:
+        input_theme = self._theme()["input"]
+        if recording:
+            self.mic_button.setStyleSheet(self._mic_recording_style())
+            icon_color = str(input_theme.get("mic_icon_recording_color") or "#ffffff")
+        else:
+            self.mic_button.setStyleSheet(self._mic_idle_style())
+            icon_color = str(input_theme.get("mic_icon_color") or "#ffffff")
+        self.mic_button.setIcon(self._mic_icon(icon_color))
 
     def _apply_chat_theme(self) -> None:
         """(Re)apply every theme-driven style; layout geometry stays untouched."""
@@ -1060,7 +1090,7 @@ class OverlayWindow(QWidget):
 
         self.input_line.setStyleSheet(self._input_line_style())
         recording = self.push_to_talk_active or self.wake_word_capture_active or self.mic_active
-        self.mic_button.setStyleSheet(self._mic_recording_style() if recording else self._mic_idle_style())
+        self._apply_mic_style(recording)
 
     def _load_subtitle_font(self) -> str:
         configured = str(self._theme().get("font_file") or "").strip()
@@ -1214,14 +1244,11 @@ class OverlayWindow(QWidget):
     def _load_animations(self) -> None:
         assets_dir = persona_assets_dir()
         self.anims = {kind: [] for kind in ANIM_KINDS}
-        for anim_cfg in self.persona_config.get("animations", []):
-            if not isinstance(anim_cfg, dict):
-                continue
-            kind = str(anim_cfg.get("kind") or "idle").lower()
-            if kind not in self.anims:
-                kind = "idle"
+        disabled_idle_cfgs: list[dict[str, Any]] = []
+
+        def build_animation(anim_cfg: dict[str, Any], kind: str) -> SpriteAnimation | None:
             try:
-                anim = SpriteAnimation(
+                return SpriteAnimation(
                     assets_dir / Path(str(anim_cfg.get("file") or "")).name,
                     frame_size=int(anim_cfg.get("frame_size") or DEFAULT_FRAME_SIZE),
                     columns=int(anim_cfg.get("columns") or 1),
@@ -1235,8 +1262,30 @@ class OverlayWindow(QWidget):
                 )
             except Exception as exc:
                 print(f"[Persona] skipped animation {anim_cfg.get('name')}: {exc}")
+                return None
+
+        for anim_cfg in self.persona_config.get("animations", []):
+            if not isinstance(anim_cfg, dict):
                 continue
-            self.anims[kind].append(anim)
+            kind = str(anim_cfg.get("kind") or "idle").lower()
+            if kind not in self.anims:
+                kind = "idle"
+            if anim_cfg.get("enabled", True) is False:
+                # Toggled off in the persona editor: never played. Disabled
+                # idles are kept aside so the pet still has a base animation
+                # if the user turns every idle off.
+                if kind == "idle":
+                    disabled_idle_cfgs.append(anim_cfg)
+                continue
+            anim = build_animation(anim_cfg, kind)
+            if anim is not None:
+                self.anims[kind].append(anim)
+        if not self.anims["idle"] and disabled_idle_cfgs:
+            print("[Persona] every idle animation is disabled; using them anyway")
+            for anim_cfg in disabled_idle_cfgs:
+                anim = build_animation(anim_cfg, "idle")
+                if anim is not None:
+                    self.anims["idle"].append(anim)
         # Built-in fallbacks, but only if the assets exist â€” a blank/draft
         # persona may legitimately have no sprites yet.
         if not self.anims["idle"]:
@@ -1503,7 +1552,7 @@ class OverlayWindow(QWidget):
         self.record_started_at = 0.0
         self.timer_label.hide()
         self.mic_active = False
-        self.mic_button.setStyleSheet(self._mic_idle_style())
+        self._apply_mic_style(False)
 
     def _start_timers(self) -> None:
         self.anim_timer = QTimer(self)
@@ -1721,7 +1770,7 @@ class OverlayWindow(QWidget):
         self.push_to_talk_active = True
         self.record_started_at = time.monotonic()
         self._update_record_timer()
-        self.mic_button.setStyleSheet(self._mic_recording_style())
+        self._apply_mic_style(True)
         self._fade_input(True)
         self._clear_subtitle_cycle()
         self._play_listening()
@@ -1738,7 +1787,7 @@ class OverlayWindow(QWidget):
         self.push_to_talk_active = False
         self.record_started_at = 0.0
         self.timer_label.hide()
-        self.mic_button.setStyleSheet(self._mic_idle_style())
+        self._apply_mic_style(False)
         duration = len(pcm) / 2 / SESSION_RATE
         if duration < 0.15:
             print("[Hotkey] ignored capture: audio is too short")
@@ -1758,7 +1807,7 @@ class OverlayWindow(QWidget):
         self.wake_word_capture_active = True
         self.record_started_at = time.monotonic()
         self._update_record_timer()
-        self.mic_button.setStyleSheet(self._mic_recording_style())
+        self._apply_mic_style(True)
         self._fade_input(True)
         self._clear_subtitle_cycle()
         self._play_listening()
@@ -1767,7 +1816,7 @@ class OverlayWindow(QWidget):
         self.wake_word_capture_active = False
         self.record_started_at = 0.0
         self.timer_label.hide()
-        self.mic_button.setStyleSheet(self._mic_idle_style())
+        self._apply_mic_style(False)
         if reason == "activation_timeout":
             print("[WakeWord] activation expired without command")
             self._play_idle()
@@ -1823,7 +1872,7 @@ class OverlayWindow(QWidget):
             self.record_started_at = 0.0
             self.timer_label.hide()
             self.audio_input.stop(keep_stream=self.wake_word_listener.enabled)
-            self.mic_button.setStyleSheet(self._mic_idle_style())
+            self._apply_mic_style(False)
             if self.anim_state in ("thinking", "listening"):
                 self._play_idle()
             self._update_input_visibility()
@@ -2024,8 +2073,9 @@ class OverlayWindow(QWidget):
         text_color = self._subtitle_text_color()
         parts: list[str] = []
         if self.show_user_subtitle and self.subtitle.user_text.strip():
+            user_color = str(self._theme()["subtitle"].get("user_name_color") or "#7dd3fc")
             parts.append(
-                '<span style="color:#7dd3fc;">Me:</span> '
+                f'<span style="color:{user_color};">Me:</span> '
                 f'<span style="color:{text_color};">{escape_html(self.subtitle.user_text)}</span>'
             )
         if self.subtitle_mode == "bot" and self.bot_text_target:

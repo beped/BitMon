@@ -50,6 +50,7 @@ CONTROL_DOMAINS = [
 # never in this file.
 CONTROL_ACTIONS = {"turn_on", "turn_off", "toggle", "set"}
 QUERY_ACTION = "query"
+LIST_ACTION = "list"
 MATCH_THRESHOLD = 100
 
 
@@ -743,6 +744,58 @@ async def _run_control(
     return result
 
 
+def _run_list(domain: str | None, user_request: str, started: float) -> dict[str, Any]:
+    """Answer "which devices/lights can you control?" from the local cache.
+
+    Only enabled devices are listed (those are the ones BitMon can act on);
+    disabled ones are just counted so the spoken answer can point the user at
+    the config page instead of claiming nothing exists.
+    """
+    all_devices = _cached_devices(enabled_only=False)
+    if domain:
+        all_devices = [device for device in all_devices if str(device.get("domain") or "") == domain]
+    enabled = [device for device in all_devices if device.get("enabled")]
+    disabled_count = len(all_devices) - len(enabled)
+    devices = [
+        {
+            "entity_id": str(device.get("entity_id") or ""),
+            "name": str(device.get("name") or device.get("entity_id") or ""),
+            "domain": str(device.get("domain") or ""),
+            "area": str(device.get("area") or ""),
+        }
+        for device in enabled[:60]
+    ]
+    label = domain or "smart-home"
+    names = ", ".join(device["name"] for device in devices[:15])
+    if devices:
+        answer = f"I can control these {label} devices: {names}."
+        if disabled_count:
+            answer += f" {disabled_count} more are imported but not enabled in the BitMon config."
+    elif disabled_count:
+        answer = (
+            f"No {label} devices are enabled for me yet; {disabled_count} are imported but disabled. "
+            "Enable them in the BitMon configuration page, Home Assistant section."
+        )
+    else:
+        answer = (
+            f"No {label} devices are in my cache. Import them in the BitMon configuration page, "
+            "Home Assistant section."
+        )
+    result: dict[str, Any] = {
+        "ok": True,
+        "request": user_request,
+        "action": LIST_ACTION,
+        "domain": domain or "",
+        "devices": devices,
+        "count": len(enabled),
+        "disabled_count": disabled_count,
+        "elapsed_seconds": round(time.perf_counter() - started, 2),
+        "answer": answer,
+    }
+    _log_ha(f"list domain={domain or '*'} -> {len(enabled)} enabled, {disabled_count} disabled")
+    return result
+
+
 async def _run_query(
     url: str,
     entities: list[dict[str, Any]],
@@ -800,10 +853,14 @@ async def execute_home_assistant_request(
         return _error("Home Assistant MCP URL is empty.", started)
 
     action = str(action or "").strip().lower()
-    if action not in CONTROL_ACTIONS and action != QUERY_ACTION:
+    if action not in CONTROL_ACTIONS and action not in {QUERY_ACTION, LIST_ACTION}:
         action = "turn_on"
     domain = (str(domain or "").strip().lower() or None)
     value = value if isinstance(value, dict) else {}
+
+    if action == LIST_ACTION:
+        return _run_list(domain, user_request, started)
+
     target_list = [str(target).strip() for target in (targets or []) if str(target).strip()]
     if not target_list and user_request.strip():
         target_list = [user_request.strip()]
@@ -827,10 +884,19 @@ async def execute_home_assistant_request(
 
     entities = _dedupe_entities(resolved)
     if not entities:
+        # Tell the model what IS available so it can answer "I have X and Y"
+        # instead of claiming no devices exist.
+        enabled = _cached_devices(enabled_only=True)
+        scoped = [device for device in enabled if str(device.get("domain") or "") == domain] if domain else enabled
+        scoped = scoped or enabled
+        available = [str(device.get("name") or device.get("entity_id")) for device in scoped[:15]]
+        message = "No matching enabled Home Assistant device was found."
+        if available:
+            message += " Devices I can control: " + ", ".join(available) + "."
         return _error(
-            "No matching enabled Home Assistant device was found.",
+            message,
             started,
-            extra={"request": user_request, "unresolved": unresolved},
+            extra={"request": user_request, "unresolved": unresolved, "available_devices": available},
         )
 
     if action == QUERY_ACTION:

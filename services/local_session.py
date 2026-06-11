@@ -18,8 +18,10 @@ from core.security import redact_for_log
 from services.chat_bus import append_message, register_session, unregister_session
 from services.inworld_tts import synthesize_inworld_pcm16
 from services.tool_runtime import (
+    TOOL_INSTRUCTIONS,
     create_chat_completion_with_tools,
     get_chat_tools,
+    get_session_tools,
 )
 from services.tts_service import synthesize_pcm16
 from services.wake_phrase import strip_configured_wake_phrase
@@ -113,6 +115,8 @@ def _system_prompt(
             f"If the user asks your name, answer that your name is {name}. "
             "Ignore any previous conversation history that mentions a different name."
         )
+    if get_session_tools(config):
+        prompt += "\n" + TOOL_INSTRUCTIONS
     if personality:
         prompt += "\n" + personality
     return prompt

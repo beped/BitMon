@@ -55,17 +55,19 @@ HOME_ASSISTANT_TOOL: dict[str, Any] = {
     "description": (
         "Control or query Home Assistant smart-home devices, in any language. You understand the user's "
         "intent and translate it into a structured action; do not pass the raw sentence. Covers lights, "
-        "switches, scenes, scripts, automations, climate, fans, covers, locks, media players, sensors and rooms."
+        "switches, scenes, scripts, automations, climate, fans, covers, locks, media players, sensors and rooms. "
+        "Use action='list' when the user asks which devices, lights or rooms you can see or control."
     ),
     "parameters": {
         "type": "object",
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["turn_on", "turn_off", "toggle", "set", "query"],
+                "enum": ["turn_on", "turn_off", "toggle", "set", "query", "list"],
                 "description": (
                     "Normalized action. Use 'set' to change a value (brightness, color, temperature, "
-                    "cover position, fan speed, volume). Use 'query' to read the current state."
+                    "cover position, fan speed, volume). Use 'query' to read the current state. "
+                    "Use 'list' to enumerate the available devices; targets is not needed then."
                 ),
             },
             "targets": {
@@ -73,7 +75,8 @@ HOME_ASSISTANT_TOOL: dict[str, Any] = {
                 "items": {"type": "string"},
                 "description": (
                     "Device or room names exactly as the user referred to them, in their own language. "
-                    "One entry per device or room (e.g. [\"kitchen light\", \"bedroom\"])."
+                    "One entry per device or room (e.g. [\"kitchen light\", \"bedroom\"]). "
+                    "Omit it (or pass []) with action='list'."
                 ),
             },
             "domain": {
@@ -92,7 +95,7 @@ HOME_ASSISTANT_TOOL: dict[str, Any] = {
                 ),
             },
         },
-        "required": ["action", "targets"],
+        "required": ["action"],
     },
 }
 
@@ -113,6 +116,8 @@ TOOL_INSTRUCTIONS = (
     "When calling screen_analyze, pass the user's actual request or goal as the question. "
     "If the user asks to open the BitMon configuration page or settings, call open_configuration. "
     "If the user asks to control or query smart-home devices, call home_assistant. "
+    "If the user asks which devices, lights, or rooms you can see or control, call home_assistant with "
+    "action='list' and, when implied, the domain (e.g. domain='light' for lights). "
     "If the user asks for something that belongs to a configured external MCP server, call external_mcp "
     "with the configured server_id, exact MCP tool_name, and JSON arguments."
 )
@@ -287,6 +292,49 @@ def _strip_leaked_tool_markup(text: str) -> str:
     return cleaned.strip()
 
 
+def _parse_leaked_tool_calls(
+    text: str,
+    tools: list[dict[str, Any]],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Recover tool calls from leaked tool-call markup.
+
+    When a model emits its tool-call special tokens as plain text (see
+    _strip_leaked_tool_markup) the intent is usually still recoverable: the
+    leaked block carries the tool name followed by a JSON arguments object.
+    Pair every known tool name found in the text with the first JSON object
+    after it, so the call can be executed as if it had arrived structured.
+    """
+    raw = str(text or "")
+    if not raw or not _LEAKED_TOOL_MARKUP_RE.search(raw):
+        return []
+    names: list[str] = []
+    for tool in tools:
+        function = tool.get("function") if isinstance(tool, dict) else None
+        name = str((function or {}).get("name") or tool.get("name") or "") if isinstance(tool, dict) else ""
+        if name and name not in names:
+            names.append(name)
+    if not names:
+        return []
+    decoder = json.JSONDecoder()
+    calls: list[tuple[str, dict[str, Any]]] = []
+    seen: set[str] = set()
+    for match in re.finditer("|".join(re.escape(name) for name in names), raw):
+        index = raw.find("{", match.end())
+        while index != -1:
+            try:
+                arguments, _length = decoder.raw_decode(raw[index:])
+            except json.JSONDecodeError:
+                index = raw.find("{", index + 1)
+                continue
+            if isinstance(arguments, dict):
+                key = f"{match.group(0)}::{json.dumps(arguments, sort_keys=True, ensure_ascii=False)}"
+                if key not in seen:
+                    seen.add(key)
+                    calls.append((match.group(0), arguments))
+            break
+    return calls
+
+
 def _tools_maybe_unsupported(exc: Exception) -> bool:
     text = str(exc).lower()
     return "tool" in text and any(
@@ -339,14 +387,36 @@ async def create_chat_completion_with_tools(
                 raise
 
         message = response.choices[0].message
-        tool_calls = list(getattr(message, "tool_calls", None) or [])
-        if not tool_calls:
-            answer = _strip_leaked_tool_markup(getattr(message, "content", None) or "")
-            if not answer and last_tool_result is not None:
-                answer = _tool_result_answer(last_tool_result)
-            return answer, called_tools
-
-        request_messages.append(_chat_message_to_dict(message))
+        tool_calls: list[Any] = list(getattr(message, "tool_calls", None) or [])
+        if tool_calls:
+            request_messages.append(_chat_message_to_dict(message))
+        else:
+            raw_content = getattr(message, "content", None) or ""
+            answer = _strip_leaked_tool_markup(raw_content)
+            if answer:
+                return answer, called_tools
+            leaked_calls = _parse_leaked_tool_calls(raw_content, tools)
+            if not leaked_calls:
+                if raw_content.strip():
+                    # Leaked tool markup we could not parse: retry the round
+                    # instead of surfacing an empty answer.
+                    continue
+                if last_tool_result is not None:
+                    return _tool_result_answer(last_tool_result), called_tools
+                return "", called_tools
+            # Execute the recovered calls exactly like structured ones.
+            tool_calls = [
+                {
+                    "id": f"leaked_{_round}_{index}",
+                    "type": "function",
+                    "function": {
+                        "name": tool_name,
+                        "arguments": json.dumps(arguments, ensure_ascii=False),
+                    },
+                }
+                for index, (tool_name, arguments) in enumerate(leaked_calls)
+            ]
+            request_messages.append({"role": "assistant", "content": "", "tool_calls": tool_calls})
         for tool_call in tool_calls:
             tool_name, raw_arguments = _tool_call_function(tool_call)
             result = await execute_tool_call(tool_name, raw_arguments, user_request=user_request)

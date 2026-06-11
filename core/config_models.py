@@ -56,6 +56,7 @@ class InworldConfig(BaseModel):
     model: str = "deepseek-v4-flash"
     voice: str = "Hana"
     voice_response: bool = True
+    max_tokens: int = Field(default=300, ge=32, le=4096)
     stt_provider: Literal["whisper"] = "whisper"
     whisper_model: Literal["tiny", "base", "small", "medium"] = "base"
     stt_language: str = "pt"

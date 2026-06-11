@@ -101,6 +101,7 @@ def _env(name: str, default: str = "") -> str:
 WEB_CONFIG_PATH = BASE_DIR / "web" / "config.html"
 WEB_TOAST_PATH = BASE_DIR / "web" / "toast.js"
 WEB_I18N_DIR = BASE_DIR / "web" / "i18n"
+WEB_VENDOR_DIR = BASE_DIR / "web" / "vendor"
 APP_ICON_PNG_PATH = BASE_DIR / "web" / "app-icon.png"
 APP_ICON_ICO_PATH = BASE_DIR / "web" / "app-icon.ico"
 WAKEWORD_DIR = BASE_DIR / "wakeword"
@@ -796,6 +797,7 @@ if bitmon_mcp is not None:
 app.mount("/persona/assets", StaticFiles(directory=PERSONA_ASSETS_DIR), name="persona_assets")
 app.mount("/persona/fonts", StaticFiles(directory=PERSONA_FONTS_DIR), name="persona_fonts")
 app.mount("/persona/icons", StaticFiles(directory=PERSONA_ICONS_DIR), name="persona_icons")
+app.mount("/vendor", StaticFiles(directory=WEB_VENDOR_DIR), name="web_vendor")
 
 
 @app.websocket("/session")

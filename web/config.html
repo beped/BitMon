@@ -7,6 +7,8 @@
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" href="/app-icon.png" />
   <link rel="apple-touch-icon" href="/app-icon.png" />
+  <link rel="stylesheet" href="/vendor/coloris.min.css" />
+  <script src="/vendor/coloris.min.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -305,6 +307,9 @@
     .grid.three {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     .model-stack {
       display: grid;
       gap: 12px;
@@ -594,6 +599,7 @@
     }
     @media (max-width: 1180px) {
       .grid.three,
+      .grid.four,
       .microphone-grid,
       .wake-runtime-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -609,6 +615,7 @@
       }
       .grid,
       .grid.three,
+      .grid.four,
       .toggle-grid,
       .microphone-grid,
       .wake-runtime-grid {
@@ -949,18 +956,68 @@
     }
     /* Compact the Themes controls so the colour cards don't take so much room. */
     [data-panel="themes"] .model-section {
-      gap: 8px;
-      padding: 10px;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 12px;
     }
     [data-panel="themes"] .grid {
-      gap: 8px 10px;
+      gap: 10px 12px;
     }
     [data-panel="themes"] .theme-controls label {
-      gap: 3px;
+      gap: 4px;
       font-size: 12px;
     }
     [data-panel="themes"] .toggle {
       padding: 6px 10px;
+    }
+    /* Sub-groups inside a theme card: small uppercase caption + divider. */
+    .theme-group {
+      display: grid;
+      gap: 8px;
+    }
+    .theme-group + .theme-group {
+      border-top: 1px dashed var(--line);
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+    .theme-group-title {
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    /* Coloris color fields: swatch on the left, hex value editable. */
+    .clr-field {
+      display: flex;
+      width: 100%;
+    }
+    .clr-field input {
+      width: 100%;
+      padding-left: 36px;
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+      font-size: 12px;
+      text-transform: lowercase;
+    }
+    .clr-field button {
+      left: 7px;
+      right: auto;
+      width: 22px;
+      height: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, .18);
+    }
+    .clr-field button::after {
+      border-radius: 5px;
+      box-shadow: none;
+    }
+    .clr-picker {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
     }
     .theme-preview-card {
       position: sticky;
@@ -1017,7 +1074,7 @@
       display: grid;
       place-items: center;
     }
-    .theme-preview-mic img {
+    .theme-preview-mic svg {
       width: 18px;
       height: 18px;
     }
@@ -1097,12 +1154,24 @@
     }
     .persona-row {
       display: grid;
-      grid-template-columns: 1fr 58px 52px 72px;
+      grid-template-columns: 1fr 58px 44px 66px 36px 72px;
       gap: 8px;
       align-items: center;
       padding: 8px;
       border-bottom: 1px solid var(--line);
       cursor: pointer;
+    }
+    .persona-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      accent-color: var(--green);
+      justify-self: center;
+      cursor: pointer;
+    }
+    /* Animation toggled off: keep the row interactive but visually muted. */
+    .persona-row.anim-off > div {
+      opacity: .4;
     }
     .persona-row:last-child {
       border-bottom: 0;
@@ -1363,6 +1432,9 @@
             <div class="grid" id="llm-inworld-fields">
               <label><span data-i18n="fields.llmModel">LLM model</span>
                 <input name="inworld.model" autocomplete="off" />
+              </label>
+              <label><span data-i18n="fields.maxTokens">Max tokens</span>
+                <input name="inworld.max_tokens" type="number" min="32" max="4096" step="1" />
               </label>
               <label><span data-i18n="fields.visionSupport">Screen vision</span>
                 <select name="inworld.vision">
@@ -1708,121 +1780,146 @@
           <div class="theme-workspace">
             <div class="theme-controls">
               <div class="model-section">
-                <div class="model-section-title" data-i18n="themes.fontTitle">Font</div>
-                <div class="grid">
-                  <label><span data-i18n="fields.themeFont">Subtitle font</span>
-                    <select id="theme-font-select"></select>
-                  </label>
-                  <label><span data-i18n="fields.themeFontSize">Font size</span>
-                    <input type="number" min="10" max="48" step="1" data-theme-path="subtitle.font_size" />
-                  </label>
-                </div>
-              </div>
-              <div class="model-section">
                 <div class="model-section-title" data-i18n="themes.bubbleTitle">Speech bubble</div>
-                <div class="grid three">
-                  <label><span data-i18n="fields.textColor">Text color</span>
-                    <input type="color" data-theme-path="subtitle.text_color" />
-                  </label>
-                  <label><span data-i18n="fields.backgroundColor">Background color</span>
-                    <input type="color" data-theme-path="subtitle.bg_color" />
-                  </label>
-                  <label><span data-i18n="fields.borderColor">Border color</span>
-                    <input type="color" data-theme-path="subtitle.border_color" />
-                  </label>
-                </div>
-                <div class="grid three">
-                  <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
-                    <input type="checkbox" data-theme-path="subtitle.bg_gradient" />
-                  </label>
-                  <label><span data-i18n="fields.gradientColor2">Second color</span>
-                    <input type="color" data-theme-path="subtitle.bg_color2" />
-                  </label>
-                  <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
-                    <select data-theme-path="subtitle.gradient_direction">
-                      <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
-                      <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
-                      <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="grid three">
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="subtitle.bg_opacity"></b></div>
-                    <input type="range" min="0" max="100" step="1" data-theme-path="subtitle.bg_opacity" />
-                  </div>
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="subtitle.border_radius"></b></div>
-                    <input type="range" min="0" max="44" step="1" data-theme-path="subtitle.border_radius" />
-                  </div>
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="subtitle.border_width"></b></div>
-                    <input type="range" min="0" max="6" step="1" data-theme-path="subtitle.border_width" />
+                <div class="theme-group">
+                  <div class="theme-group-title" data-i18n="themes.groupText">Text</div>
+                  <div class="grid four">
+                    <label><span data-i18n="fields.themeFont">Subtitle font</span>
+                      <select id="theme-font-select"></select>
+                    </label>
+                    <label><span data-i18n="fields.themeFontSize">Font size</span>
+                      <input type="number" min="10" max="48" step="1" data-theme-path="subtitle.font_size" />
+                    </label>
+                    <label><span data-i18n="fields.textColor">Text color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.text_color" />
+                    </label>
+                    <label><span data-i18n="fields.highlightColor">Spoken word color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.highlight_color" />
+                    </label>
                   </div>
                 </div>
-                <div class="grid three">
-                  <label class="toggle"><span data-i18n="fields.nameTag">Show character name</span>
-                    <input type="checkbox" data-theme-path="subtitle.name_tag" />
-                  </label>
-                  <label><span data-i18n="fields.nameColor">Name color</span>
-                    <input type="color" data-theme-path="subtitle.name_color" />
-                  </label>
-                  <label><span data-i18n="fields.highlightColor">Spoken word color</span>
-                    <input type="color" data-theme-path="subtitle.highlight_color" />
-                  </label>
+                <div class="theme-group">
+                  <div class="theme-group-title" data-i18n="themes.groupNames">Names</div>
+                  <div class="grid four">
+                    <label class="toggle"><span data-i18n="fields.nameTag">Show character name</span>
+                      <input type="checkbox" data-theme-path="subtitle.name_tag" />
+                    </label>
+                    <label><span data-i18n="fields.nameColor">Name color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.name_color" />
+                    </label>
+                    <label><span data-i18n="fields.userNameColor">My name color (Me:)</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.user_name_color" />
+                    </label>
+                  </div>
+                </div>
+                <div class="theme-group">
+                  <div class="theme-group-title" data-i18n="themes.groupBackground">Background &amp; border</div>
+                  <div class="grid four">
+                    <label><span data-i18n="fields.backgroundColor">Background color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.bg_color" />
+                    </label>
+                    <label><span data-i18n="fields.borderColor">Border color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.border_color" />
+                    </label>
+                    <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
+                      <input type="checkbox" data-theme-path="subtitle.bg_gradient" />
+                    </label>
+                    <label><span data-i18n="fields.gradientColor2">Second color</span>
+                      <input type="text" data-coloris data-theme-path="subtitle.bg_color2" />
+                    </label>
+                  </div>
+                  <div class="grid four">
+                    <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
+                      <select data-theme-path="subtitle.gradient_direction">
+                        <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
+                        <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
+                        <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
+                      </select>
+                    </label>
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="subtitle.bg_opacity"></b></div>
+                      <input type="range" min="0" max="100" step="1" data-theme-path="subtitle.bg_opacity" />
+                    </div>
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="subtitle.border_radius"></b></div>
+                      <input type="range" min="0" max="44" step="1" data-theme-path="subtitle.border_radius" />
+                    </div>
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="subtitle.border_width"></b></div>
+                      <input type="range" min="0" max="6" step="1" data-theme-path="subtitle.border_width" />
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="model-section">
                 <div class="model-section-title" data-i18n="themes.inputTitle">Text input</div>
-                <div class="grid three">
-                  <label><span data-i18n="fields.textColor">Text color</span>
-                    <input type="color" data-theme-path="input.text_color" />
-                  </label>
-                  <label><span data-i18n="fields.backgroundColor">Background color</span>
-                    <input type="color" data-theme-path="input.bg_color" />
-                  </label>
-                  <label><span data-i18n="fields.borderColor">Border color</span>
-                    <input type="color" data-theme-path="input.border_color" />
-                  </label>
-                </div>
-                <div class="grid three">
-                  <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
-                    <input type="checkbox" data-theme-path="input.bg_gradient" />
-                  </label>
-                  <label><span data-i18n="fields.gradientColor2">Second color</span>
-                    <input type="color" data-theme-path="input.bg_color2" />
-                  </label>
-                  <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
-                    <select data-theme-path="input.gradient_direction">
-                      <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
-                      <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
-                      <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="grid three">
-                  <label><span data-i18n="fields.focusBorderColor">Focus border color</span>
-                    <input type="color" data-theme-path="input.focus_border_color" />
-                  </label>
-                  <label><span data-i18n="fields.micColor">Mic button color</span>
-                    <input type="color" data-theme-path="input.mic_color" />
-                  </label>
-                  <div></div>
-                </div>
-                <div class="grid three">
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="input.bg_opacity"></b></div>
-                    <input type="range" min="0" max="100" step="1" data-theme-path="input.bg_opacity" />
-                  </div>
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="input.border_radius"></b></div>
-                    <input type="range" min="0" max="25" step="1" data-theme-path="input.border_radius" />
-                  </div>
-                  <div class="theme-range">
-                    <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="input.border_width"></b></div>
-                    <input type="range" min="0" max="6" step="1" data-theme-path="input.border_width" />
+                <div class="theme-group">
+                  <div class="theme-group-title" data-i18n="themes.groupColors">Colors</div>
+                  <div class="grid four">
+                    <label><span data-i18n="fields.textColor">Text color</span>
+                      <input type="text" data-coloris data-theme-path="input.text_color" />
+                    </label>
+                    <label><span data-i18n="fields.backgroundColor">Background color</span>
+                      <input type="text" data-coloris data-theme-path="input.bg_color" />
+                    </label>
+                    <label><span data-i18n="fields.borderColor">Border color</span>
+                      <input type="text" data-coloris data-theme-path="input.border_color" />
+                    </label>
+                    <label><span data-i18n="fields.focusBorderColor">Focus border color</span>
+                      <input type="text" data-coloris data-theme-path="input.focus_border_color" />
+                    </label>
                   </div>
                 </div>
+                <div class="theme-group">
+                  <div class="theme-group-title" data-i18n="themes.groupBackground">Background &amp; border</div>
+                  <div class="grid four">
+                    <label class="toggle"><span data-i18n="fields.gradientEnabled">Gradient background</span>
+                      <input type="checkbox" data-theme-path="input.bg_gradient" />
+                    </label>
+                    <label><span data-i18n="fields.gradientColor2">Second color</span>
+                      <input type="text" data-coloris data-theme-path="input.bg_color2" />
+                    </label>
+                    <label><span data-i18n="fields.gradientDirection">Gradient direction</span>
+                      <select data-theme-path="input.gradient_direction">
+                        <option value="vertical" data-i18n="gradient.vertical">Vertical</option>
+                        <option value="horizontal" data-i18n="gradient.horizontal">Horizontal</option>
+                        <option value="diagonal" data-i18n="gradient.diagonal">Diagonal</option>
+                      </select>
+                    </label>
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.backgroundOpacity">Background opacity</span><b data-theme-readout="input.bg_opacity"></b></div>
+                      <input type="range" min="0" max="100" step="1" data-theme-path="input.bg_opacity" />
+                    </div>
+                  </div>
+                  <div class="grid four">
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.cornerRadius">Corner radius</span><b data-theme-readout="input.border_radius"></b></div>
+                      <input type="range" min="0" max="25" step="1" data-theme-path="input.border_radius" />
+                    </div>
+                    <div class="theme-range">
+                      <div class="range-top"><span data-i18n="fields.borderWidth">Border width</span><b data-theme-readout="input.border_width"></b></div>
+                      <input type="range" min="0" max="6" step="1" data-theme-path="input.border_width" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="model-section">
+                <div class="model-section-title" data-i18n="themes.micTitle">Microphone button</div>
+                <div class="grid four">
+                  <label><span data-i18n="fields.micColor">Button color</span>
+                    <input type="text" data-coloris data-theme-path="input.mic_color" />
+                  </label>
+                  <label><span data-i18n="fields.micRecordingColor">Button pressed color</span>
+                    <input type="text" data-coloris data-theme-path="input.mic_recording_color" />
+                  </label>
+                  <label><span data-i18n="fields.micIconColor">Icon color</span>
+                    <input type="text" data-coloris data-theme-path="input.mic_icon_color" />
+                  </label>
+                  <label><span data-i18n="fields.micIconRecordingColor">Icon pressed color</span>
+                    <input type="text" data-coloris data-theme-path="input.mic_icon_recording_color" />
+                  </label>
+                </div>
+                <div class="hint" data-i18n="themes.micHint">Hold the mic button in the preview to see the pressed state.</div>
               </div>
             </div>
             <div class="theme-preview-card">
@@ -1834,7 +1931,7 @@
                 </div>
                 <div class="theme-preview-field" id="theme-preview-field">
                   <span id="theme-preview-placeholder" data-i18n="themes.previewPlaceholder">Type your message</span>
-                  <span class="theme-preview-mic" id="theme-preview-mic"><img src="/persona/icons/mic.svg" alt="" /></span>
+                  <span class="theme-preview-mic" id="theme-preview-mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></span>
                 </div>
               </div>
               <div class="hint" data-i18n="themes.previewHint">The overlay updates as soon as you save the configuration.</div>
@@ -2980,7 +3077,9 @@
     function renderPersonaLibrary(preferId) {
       if (!personaLibrarySelect) return;
       const personas = personaLibrary.personas || [];
-      const previous = preferId || personaLibrarySelect.value || personaLibrary.editing || personaLibrary.active || "";
+      // preferId may be an Event when this runs as a listener; only honor strings.
+      const prefer = typeof preferId === "string" ? preferId : "";
+      const previous = prefer || personaLibrarySelect.value || personaLibrary.editing || personaLibrary.active || "";
       const selected = personas.some((persona) => persona.id === previous)
         ? previous
         : personaLibrary.active || personas[0]?.id || "";
@@ -3416,6 +3515,26 @@
       return personaConfig.animations[personaEditingIndex];
     }
 
+    function personaAnimationSeconds(animation) {
+      const fps = Math.max(1, Number(animation.fps || 24));
+      const frames = Math.max(1, Number(animation.used_frames || 1));
+      const seconds = frames / fps;
+      return `${seconds >= 10 ? seconds.toFixed(0) : seconds.toFixed(1)}s`;
+    }
+
+    function personaRowHtml(animation, index) {
+      const kindLabel = t(`persona.type.${animation.kind || "idle"}`);
+      const enabled = animation.enabled !== false;
+      return `
+            <div><strong>${escapeHtml(animation.name || t("persona.untitled"))}</strong><br><span class="hint">${escapeHtml(animation.file || t("persona.noFile"))}</span></div>
+            <div class="device-domain">${escapeHtml(kindLabel)}</div>
+            <div class="device-domain">${Number(animation.fps || 24)}</div>
+            <div class="device-domain">${personaAnimationSeconds(animation)}</div>
+            <input type="checkbox" data-persona-toggle="${index}" ${enabled ? "checked" : ""} />
+            <button class="action danger" type="button" data-persona-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
+      `;
+    }
+
     function renderPersonaAnimations() {
       if (!personaConfig) return;
       personaList.innerHTML = `
@@ -3423,6 +3542,8 @@
           <div>${escapeHtml(t("persona.columns.name"))}</div>
           <div>${escapeHtml(t("persona.columns.type"))}</div>
           <div>${escapeHtml(t("persona.columns.fps"))}</div>
+          <div>${escapeHtml(t("persona.columns.seconds"))}</div>
+          <div>${escapeHtml(t("persona.columns.enabled"))}</div>
           <div></div>
         </div>
       `;
@@ -3437,16 +3558,22 @@
           row.className = "persona-row";
           row.dataset.personaRow = String(index);
           if (index === personaEditingIndex) row.classList.add("active");
-          const kindLabel = t(`persona.type.${animation.kind || "idle"}`);
-          row.innerHTML = `
-            <div><strong>${escapeHtml(animation.name || t("persona.untitled"))}</strong><br><span class="hint">${escapeHtml(animation.file || t("persona.noFile"))}</span></div>
-            <div class="device-domain">${escapeHtml(kindLabel)}</div>
-            <div class="device-domain">${Number(animation.fps || 24)}</div>
-            <button class="action danger" type="button" data-persona-delete="${index}">${escapeHtml(t("actions.delete"))}</button>
-          `;
+          if (animation.enabled === false) row.classList.add("anim-off");
+          row.innerHTML = personaRowHtml(animation, index);
           personaList.appendChild(row);
         });
       renderPersonaEditor();
+    }
+
+    function updatePersonaListRow() {
+      // Refresh only the row being edited, in place: a full re-render would
+      // rebuild the editor form and steal focus while the user is typing.
+      const animation = currentPersonaAnimation();
+      if (!animation) return;
+      const row = personaList.querySelector(`[data-persona-row="${personaEditingIndex}"]`);
+      if (!row) return;
+      row.innerHTML = personaRowHtml(animation, personaEditingIndex);
+      row.classList.toggle("anim-off", animation.enabled === false);
     }
 
 
@@ -3634,6 +3761,26 @@
     const loadedPreviewFonts = new Map();
     let themeConfig = null;
     let themeLibrary = {themes: []};
+    let themePreviewMicPressed = false;
+    // True while renderThemeEditor pushes values into the inputs, so the
+    // input listeners (and Coloris swatch refresh events) do not mark the
+    // theme as custom or re-render in a loop.
+    let themeEditorSyncing = false;
+
+    if (window.Coloris) {
+      Coloris({
+        el: "[data-coloris]",
+        themeMode: "dark",
+        alpha: false,
+        format: "hex",
+        margin: 6,
+        swatches: [
+          "#ffffff", "#000000", "#f1f3f7", "#7dd3fc", "#3b82f6", "#2563eb",
+          "#16a34a", "#22c55e", "#fbbf24", "#f59e0b", "#ff5757", "#e85d9c",
+          "#8b5cf6", "#b39ddb",
+        ],
+      });
+    }
 
     // Mirrors DEFAULT_THEME in theme_config.py.
     const THEME_DEFAULTS = {
@@ -3643,13 +3790,13 @@
         font_size: 18, text_color: "#ffffff",
         bg_color: "#000000", bg_color2: "#000000", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 62,
         border_radius: 18, border_color: "#000000", border_width: 0,
-        name_tag: false, name_color: "#fbbf24", highlight_color: "#ff5757",
+        name_tag: false, name_color: "#fbbf24", user_name_color: "#7dd3fc", highlight_color: "#ff5757",
       },
       input: {
         text_color: "#ffffff",
         bg_color: "#2e2e2e", bg_color2: "#2e2e2e", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 45,
         border_radius: 14, border_color: "#3d4f69", border_width: 1, focus_border_color: "#7399ff",
-        mic_color: "#2563eb",
+        mic_color: "#2563eb", mic_recording_color: "#16a34a", mic_icon_color: "#ffffff", mic_icon_recording_color: "#ffffff",
       },
     };
 
@@ -3663,13 +3810,13 @@
           font_size: 18, text_color: "#eaf2fb",
           bg_color: "#152238", bg_color2: "#0a1322", bg_gradient: true, gradient_direction: "diagonal", bg_opacity: 80,
           border_radius: 16, border_color: "#4a6f9e", border_width: 1,
-          name_tag: true, name_color: "#6ec4ff", highlight_color: "#ffd166",
+          name_tag: true, name_color: "#6ec4ff", user_name_color: "#7dd3fc", highlight_color: "#ffd166",
         },
         input: {
           text_color: "#eaf2fb",
           bg_color: "#0e1830", bg_color2: "#0a1222", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 82,
           border_radius: 14, border_color: "#33506e", border_width: 1, focus_border_color: "#6ea8ff",
-          mic_color: "#2563eb",
+          mic_color: "#2563eb", mic_recording_color: "#16a34a", mic_icon_color: "#ffffff", mic_icon_recording_color: "#ffffff",
         },
       },
       midnight: {
@@ -3677,13 +3824,13 @@
           font_size: 18, text_color: "#f1f3f7",
           bg_color: "#0b0c10", bg_color2: "#0b0c10", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 90,
           border_radius: 18, border_color: "#23252d", border_width: 1,
-          name_tag: true, name_color: "#4d9fff", highlight_color: "#ff5757",
+          name_tag: true, name_color: "#4d9fff", user_name_color: "#7dd3fc", highlight_color: "#ff5757",
         },
         input: {
           text_color: "#f1f3f7",
           bg_color: "#13151d", bg_color2: "#13151d", bg_gradient: false, gradient_direction: "vertical", bg_opacity: 92,
           border_radius: 22, border_color: "#1f2230", border_width: 1, focus_border_color: "#3b82f6",
-          mic_color: "#2f6bff",
+          mic_color: "#2f6bff", mic_recording_color: "#16a34a", mic_icon_color: "#ffffff", mic_icon_recording_color: "#ffffff",
         },
       },
       kawaii: {
@@ -3691,13 +3838,13 @@
           font_size: 18, text_color: "#7a5236",
           bg_color: "#fff7e8", bg_color2: "#ffe8cf", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 97,
           border_radius: 24, border_color: "#f3d9ae", border_width: 3,
-          name_tag: true, name_color: "#e8853c", highlight_color: "#e85d9c",
+          name_tag: true, name_color: "#e8853c", user_name_color: "#7dd3fc", highlight_color: "#e85d9c",
         },
         input: {
           text_color: "#9b7a5d",
           bg_color: "#fffaf0", bg_color2: "#fdeedd", bg_gradient: true, gradient_direction: "vertical", bg_opacity: 97,
           border_radius: 25, border_color: "#f0dcc0", border_width: 2, focus_border_color: "#d9b8f5",
-          mic_color: "#b39ddb",
+          mic_color: "#b39ddb", mic_recording_color: "#16a34a", mic_icon_color: "#ffffff", mic_icon_recording_color: "#ffffff",
         },
       },
     };
@@ -3872,13 +4019,17 @@
       renderThemePresets();
       renderThemeLibrary();
       renderThemeFontOptions(themeConfig.font_file || "");
+      themeEditorSyncing = true;
       themeInputs.forEach((input) => {
         const value = getPath(themeConfig, input.dataset.themePath);
         if (input.type === "checkbox") input.checked = Boolean(value);
         else input.value = String(value);
+        // Coloris only repaints the swatch when the input emits an event.
+        if (input.hasAttribute("data-coloris")) input.dispatchEvent(new Event("input", {bubbles: true}));
         const readout = document.querySelector(`[data-theme-readout="${input.dataset.themePath}"]`);
         if (readout) readout.textContent = String(value);
       });
+      themeEditorSyncing = false;
       updateThemePreview();
     }
 
@@ -3926,9 +4077,25 @@
       themePreviewField.style.border = `${Math.max(0, inp.border_width)}px solid ${rgbaCss(inp.border_color, 80)}`;
       themePreviewField.style.borderRadius = `${inp.border_radius}px`;
       themePreviewPlaceholder.style.color = rgbaCss(inp.text_color, 55);
-      themePreviewMic.style.background = inp.mic_color;
+      // Hold the mouse on the preview mic to see the pressed (recording) state.
+      themePreviewMic.style.background = themePreviewMicPressed
+        ? (inp.mic_recording_color || "#16a34a")
+        : inp.mic_color;
+      themePreviewMic.style.color = themePreviewMicPressed
+        ? (inp.mic_icon_recording_color || "#ffffff")
+        : (inp.mic_icon_color || "#ffffff");
       themePreviewMic.style.borderRadius = `0 ${inp.border_radius}px ${inp.border_radius}px 0`;
     }
+
+    themePreviewMic?.addEventListener("pointerdown", () => {
+      themePreviewMicPressed = true;
+      updateThemePreview();
+    });
+    window.addEventListener("pointerup", () => {
+      if (!themePreviewMicPressed) return;
+      themePreviewMicPressed = false;
+      updateThemePreview();
+    });
 
     async function loadTheme() {
       const [configRes, libraryRes] = await Promise.all([
@@ -3957,9 +4124,9 @@
 
     themeInputs.forEach((input) => {
       input.addEventListener("input", () => {
-        if (!themeConfig) return;
+        if (!themeConfig || themeEditorSyncing) return;
         const value = input.type === "checkbox" ? input.checked
-          : (input.type === "color" || input.tagName === "SELECT") ? input.value
+          : (input.type === "color" || input.type === "text" || input.tagName === "SELECT") ? input.value
           : Number(input.value);
         setPath(themeConfig, input.dataset.themePath, value);
         const readout = document.querySelector(`[data-theme-readout="${input.dataset.themePath}"]`);
@@ -4324,7 +4491,16 @@
       setText(devicesSummary, "status.deviceRemoved");
       notify("status.deviceRemoved", "info");
     });
-    personaLibrarySelect.addEventListener("change", renderPersonaLibrary);
+    personaLibrarySelect.addEventListener("change", () => {
+      renderPersonaLibrary();
+      // Selecting in the library only opens the persona for editing; it never
+      // activates it (activation stays behind the Activate button).
+      editSelectedPersona().catch((err) => {
+        setStatus("status.genericError", {error: err.message});
+        notify("status.genericError", "error", {error: err.message});
+        renderPersonaLibrary();
+      });
+    });
     personaNameInput.addEventListener("input", () => {
       const hasName = Boolean(personaNameInput.value.trim());
       personaSaveName.disabled = !selectedPersonaId() || !hasName;
@@ -4418,6 +4594,7 @@
         used_frames: 1,
         fps: 24,
         idle_after: 0,
+        enabled: true,
       });
       personaEditingIndex = personaConfig.animations.length - 1;
       renderPersonaAnimations();
@@ -4447,20 +4624,52 @@
           });
         return;
       }
+      // Toggle clicks are handled by the dedicated change listener below; a
+      // full re-render here would detach the checkbox before "change" fires.
+      if (event.target.closest("[data-persona-toggle]")) return;
       const row = event.target.closest("[data-persona-row]");
       if (!row) return;
       writePersonaEditor();
       personaEditingIndex = Number(row.dataset.personaRow);
       renderPersonaAnimations();
     });
+    personaList.addEventListener("change", (event) => {
+      const toggle = event.target.closest("[data-persona-toggle]");
+      if (!toggle || !personaConfig?.animations) return;
+      const index = Number(toggle.dataset.personaToggle);
+      const animation = personaConfig.animations[index];
+      if (!animation) return;
+      // The pet always needs a base animation: never let the last enabled
+      // idle be turned off.
+      if (!toggle.checked && (animation.kind || "idle") === "idle") {
+        const anotherIdleOn = personaConfig.animations.some((anim, i) =>
+          i !== index && (anim.kind || "idle") === "idle" && anim.enabled !== false);
+        if (!anotherIdleOn) {
+          toggle.checked = true;
+          setStatus("status.idleMustStayOn");
+          notify("status.idleMustStayOn", "warning");
+          return;
+        }
+      }
+      animation.enabled = toggle.checked;
+      toggle.closest(".persona-row")?.classList.toggle("anim-off", !toggle.checked);
+      savePersona()
+        .then(() => setStatus("status.animationUpdated"))
+        .catch((err) => {
+          setStatus("status.saveError", {error: err.message});
+          notify("status.saveError", "error", {error: err.message});
+        });
+    });
     [personaEditName, personaEditKind, personaEditFile, personaEditFrameSize, personaEditColumns, personaEditRows, personaEditUsedFrames, personaEditFps, personaEditIdleAfter].forEach((input) => {
       input.addEventListener("input", () => {
         writePersonaEditor();
+        updatePersonaListRow();
         restartPersonaPreview();
         setStatus("status.personaPending");
       });
       input.addEventListener("change", () => {
         writePersonaEditor();
+        updatePersonaListRow();
         restartPersonaPreview();
         setStatus("status.personaPending");
       });

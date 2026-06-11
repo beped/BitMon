@@ -23,6 +23,7 @@
     "model": "deepseek-v4-flash",
     "voice": "Sarah",
     "voice_response": true,
+    "max_tokens": 300,
     "stt_provider": "whisper",
     "whisper_model": "base",
     "stt_language": "en",

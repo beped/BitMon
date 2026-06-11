@@ -38,6 +38,7 @@ DEFAULT_THEME: dict[str, Any] = {
         "border_width": 0,
         "name_tag": False,
         "name_color": "#fbbf24",
+        "user_name_color": "#7dd3fc",
         "highlight_color": "#ff5757",
     },
     "input": {
@@ -52,6 +53,9 @@ DEFAULT_THEME: dict[str, Any] = {
         "border_width": 1,
         "focus_border_color": "#7399ff",
         "mic_color": "#2563eb",
+        "mic_recording_color": "#16a34a",
+        "mic_icon_color": "#ffffff",
+        "mic_icon_recording_color": "#ffffff",
     },
 }
 

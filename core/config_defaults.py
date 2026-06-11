@@ -32,6 +32,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "model": "deepseek-v4-flash",
         "voice": "Hana",
         "voice_response": True,
+        "max_tokens": 300,
         "stt_provider": "whisper",
         "whisper_model": "base",
         "stt_language": "pt",

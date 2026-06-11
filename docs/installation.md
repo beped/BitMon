@@ -32,8 +32,8 @@ Clone or download this `backend` folder. Everything BitMon needs lives inside
 it — the launcher, the config UI, the persona overlay and the bundled assets.
 
 ```powershell
-git clone <your-fork-url> bitmon
-cd bitmon
+git clone https://github.com/beped/BitMon
+cd BitMon
 ```
 
 ---

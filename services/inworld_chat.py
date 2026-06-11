@@ -20,8 +20,10 @@ from services.inworld_auth import create_inworld_router_client, inworld_key_form
 from services.inworld_tts import synthesize_inworld_pcm16
 from services.tts_service import synthesize_pcm16
 from services.tool_runtime import (
+    TOOL_INSTRUCTIONS,
     create_chat_completion_with_tools,
     get_chat_tools,
+    get_session_tools,
 )
 from services.wake_phrase import strip_configured_wake_phrase
 from services.whisper_service import transcribe_pcm16
@@ -63,6 +65,8 @@ def _system_prompt(config: dict[str, Any]) -> str:
             f"If the user asks your name, answer that your name is {name}. "
             "Ignore any previous conversation history that mentions a different name."
         )
+    if get_session_tools(config):
+        prompt += "\n" + TOOL_INSTRUCTIONS
     if personality:
         prompt += "\n" + personality
     return prompt
@@ -72,16 +76,16 @@ def _config_signature(config: dict[str, Any]) -> str:
     return json.dumps(config, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
 
 
-def _shorten_voice_answer(text: str) -> str:
+def _shorten_voice_answer(text: str, max_chars: int = VOICE_RESPONSE_MAX_CHARS) -> str:
     cleaned = " ".join(str(text or "").split())
-    if len(cleaned) <= VOICE_RESPONSE_MAX_CHARS:
+    if len(cleaned) <= max_chars:
         return cleaned
     sentence_matches = list(re.finditer(r"(?<=[.!?])\s+", cleaned))
     for match in sentence_matches:
         candidate = cleaned[:match.start()].strip()
-        if 80 <= len(candidate) <= VOICE_RESPONSE_MAX_CHARS:
+        if 80 <= len(candidate) <= max_chars:
             return candidate
-    return cleaned[:VOICE_RESPONSE_MAX_CHARS].rsplit(" ", 1)[0].rstrip(" ,;:") + "."
+    return cleaned[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;:") + "."
 
 
 async def inworld_chat_proxy(client_ws: WebSocket) -> None:
@@ -131,6 +135,11 @@ async def inworld_chat_proxy(client_ws: WebSocket) -> None:
             voice_id_now = str(inworld_now.get("voice") or settings.INWORLD_VOICE)
             voice_response_now = bool(tts_now.get("enabled", inworld_now.get("voice_response", True)))
             tts_provider_now = str(tts_now.get("provider") or "inworld").lower()
+            max_tokens_now = int(inworld_now.get("max_tokens") or VOICE_RESPONSE_MAX_TOKENS)
+            # The spoken answer may use everything the token budget allows; the
+            # char cap only exists to keep TTS playback bounded when the model
+            # ignores the prompt's brevity rules.
+            max_chars_now = max(VOICE_RESPONSE_MAX_CHARS, max_tokens_now * 4)
             print(
                 f"{flow_prefix} mode=normal stt=whisper llm=inworld-router "
                 f"tts={tts_provider_now if voice_response_now else 'off'} text_chars={len(user_text)}"
@@ -147,7 +156,7 @@ async def inworld_chat_proxy(client_ws: WebSocket) -> None:
                     messages=[history[0]] + history[1:][-12:],
                     tools=get_chat_tools(config_now),
                     user_request=user_text,
-                    max_tokens=VOICE_RESPONSE_MAX_TOKENS,
+                    max_tokens=max_tokens_now,
                 )
             except Exception as exc:
                 # Recover from a single failed turn instead of letting the
@@ -166,7 +175,7 @@ async def inworld_chat_proxy(client_ws: WebSocket) -> None:
                 )
             else:
                 print(f"{flow_prefix} llm response in {time.perf_counter() - response_started:.2f}s")
-            answer = _shorten_voice_answer(answer) or "I do not have an answer for that right now."
+            answer = _shorten_voice_answer(answer, max_chars_now) or "I do not have an answer for that right now."
             history.append({"role": "assistant", "content": answer})
             append_message("assistant", answer)
             print(f"{flow_prefix} answer chars={len(answer)} voice={'on' if voice_response_now else 'off'}")
