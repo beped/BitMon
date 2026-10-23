@@ -2,7 +2,7 @@
 
 ![BitMon hero](docs/images/hero.png)
 
-# BitMon
+# Kakarot
 
 **A local, voice-driven desktop companion.**
 An animated pet lives on your screen, listens when you talk to it, thinks, and
@@ -10,6 +10,12 @@ talks back — powered by your choice of cloud (Inworld) or fully-offline
 (LM Studio + Kokoro) AI.
 
 </div>
+
+Kakarot began as a fork of **[BitMon](https://github.com/beped/BitMon)** by
+**[beped](https://github.com/beped)** and is being developed with its own purpose
+and direction. The original project provided the foundation for this work.
+Some screenshots, documentation, and launcher labels below still use the
+original BitMon name.
 
 ---
 
@@ -143,6 +149,16 @@ More detail in [docs/providers.md](docs/providers.md#privacy) and the repository
 ├── wakeword/            # Bundled wake-word models
 └── docs/                # 📖 You are here
 ```
+
+---
+
+## Acknowledgements
+
+Thank you to **[beped](https://github.com/beped)** and the contributors to
+**[BitMon](https://github.com/beped/BitMon)** for the original desktop companion
+and the code, documentation, and assets inherited by this project. Kakarot's
+subsequent changes build on that foundation; credit for the original work
+belongs to its authors.
 
 ---
 
