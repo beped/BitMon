@@ -17,6 +17,24 @@ and direction. The original project provided the foundation for this work.
 Some screenshots, documentation, and launcher labels below still use the
 original BitMon name.
 
+> [!IMPORTANT]
+> **Kakarot is still being built and tested.** It is incomplete and not fully
+> optimized. Features, setup instructions, and behavior may change as development
+> continues; reliability and performance are still being evaluated.
+
+## Development highlights
+
+Recent project history records work on:
+
+- Weather queries and opening desktop applications through voice commands.
+- Home Assistant response speed and custom voice phrases.
+- Configuration UI improvements and fixes to the desktop companion experience.
+- Additional AI provider support and improvements to voice interactions.
+- Internal code organization and general fixes.
+
+These highlights include work shared with BitMon's history and are not a claim
+of production readiness or completed optimization.
+
 ---
 
 <div align="center">
