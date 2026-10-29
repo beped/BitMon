@@ -145,6 +145,18 @@ More detail in [docs/providers.md](docs/providers.md#privacy) and the repository
 ```
 
 ---
+---
+
+## 🌍 Community Projects
+
+Projects built on top of BitMon by the community:
+
+* **Kakarot** — A fork of BitMon exploring a different direction. Currently under development and testing; incomplete and not fully optimized.
+
+
+
+
+
 
 <div align="center">
 <sub>Made with FastAPI · PySide6 · WhisperX · Kokoro · Inworld.</sub>
