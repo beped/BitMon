@@ -151,7 +151,7 @@ More detail in [docs/providers.md](docs/providers.md#privacy) and the repository
 
 Projects built on top of BitMon by the community:
 
-* [https://github.com/BhattAyush17/BitMon-custom/tree/BhattAyush17/readme-attribution](**Kakarot**) — A fork of BitMon exploring a different direction. Currently under development and testing; incomplete and not fully optimized.
+* [**Kakarot**](https://github.com/BhattAyush17/BitMon-custom/tree/BhattAyush17/readme-attribution) — A fork of BitMon exploring a different direction. Currently under development and testing; incomplete and not fully optimized.
 
 
 
